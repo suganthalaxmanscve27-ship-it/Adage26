@@ -1286,27 +1286,40 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-                  {/* Left Column: Transaction Details (1 col) */}
-                  <div className="bg-black/60 p-5 rounded-xl border border-white/[0.08] flex flex-col justify-between space-y-4">
-                    <div className="space-y-4">
-                      <div>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">12-Digit UTR (Transaction ID)</span>
-                        <p className="text-[#C8922A] font-mono font-black text-lg sm:text-xl tracking-widest select-all bg-[#0A0D14] p-3 rounded border border-[#C8922A]/30">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+                  {/* Left Column: Transaction Details (2 cols on lg) */}
+                  <div className="lg:col-span-2 bg-black/60 p-5 rounded-xl border border-white/[0.08] flex flex-col justify-between space-y-4">
+                    <div className="space-y-3 font-cad">
+                      <span className="text-[10px] text-[#C8922A] font-bold uppercase tracking-[0.2em] block mb-2">
+                        TRANSACTION DATA
+                      </span>
+
+                      {/* UTR Metric Card */}
+                      <div className="bg-[#0A0D14] p-4 rounded-xl border border-[#C8922A]/40 space-y-1 shadow-md">
+                        <span className="text-[9px] font-mono text-gray-400 uppercase tracking-widest block">
+                          12-Digit UTR / Transaction ID
+                        </span>
+                        <p className="text-[#C8922A] font-mono font-black text-lg sm:text-xl tracking-wider select-all break-all">
                           {selectedParticipant.transactionId}
                         </p>
                       </div>
 
-                      <div>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Total Fee Amount</span>
-                        <p className="text-white font-cinzel font-black text-2xl">
+                      {/* Fee Metric Card */}
+                      <div className="bg-[#0A0D14] p-4 rounded-xl border border-white/10 space-y-1 shadow-md">
+                        <span className="text-[9px] font-mono text-gray-400 uppercase tracking-widest block">
+                          Total Fee Amount
+                        </span>
+                        <p className="text-emerald-400 font-cinzel font-black text-2xl tracking-wide">
                           ₹{selectedParticipant.totalFee || 0}
                         </p>
                       </div>
 
-                      <div>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Submitted On</span>
-                        <p className="text-gray-300 text-xs font-cad">
+                      {/* Timestamp Metric Card */}
+                      <div className="bg-[#0A0D14] p-4 rounded-xl border border-white/10 space-y-1 shadow-md">
+                        <span className="text-[9px] font-mono text-gray-400 uppercase tracking-widest block flex items-center gap-1.5">
+                          <Clock size={11} className="text-[#C8922A]" /> Submission Date & Time
+                        </span>
+                        <p className="text-gray-200 text-xs font-mono">
                           {new Date(selectedParticipant.timestamp).toLocaleString()}
                         </p>
                       </div>
@@ -1317,15 +1330,15 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
                         href={selectedParticipant.screenshotUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="w-full py-3 px-4 bg-[#C8922A] text-black hover:bg-[#B07A20] font-cad font-bold text-xs rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg mt-2"
+                        className="w-full py-3.5 px-4 bg-[#C8922A] text-black hover:bg-[#B07A20] font-cad font-black text-xs rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl mt-3"
                       >
-                        <ExternalLink size={14} /> Open in Google Drive
+                        <ExternalLink size={15} /> Open in Google Drive
                       </a>
                     )}
                   </div>
 
-                  {/* Right Column: BIG Payment Receipt Image Viewer (2 cols) */}
-                  <div className="md:col-span-2 space-y-2 flex flex-col">
+                  {/* Right Column: BIG Payment Receipt Image Viewer (3 cols on lg) */}
+                  <div className="lg:col-span-3 space-y-2 flex flex-col">
                     <span className="text-[10px] text-gray-400 uppercase tracking-widest block font-cad">
                       Uploaded Screenshot Preview
                     </span>
