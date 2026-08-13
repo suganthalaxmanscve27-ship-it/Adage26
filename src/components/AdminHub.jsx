@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../supabase';
 import { ut, Sr } from '../events';
 import {
   Users, CheckCircle, Clock, AlertTriangle, Search, LogOut,
-  QrCode, ClipboardList, Settings, Download, Plus, X, Phone,
+  ClipboardList, Settings, Download, Plus, X, Phone,
   Mail, Calendar, ArrowRight, ShieldCheck, Loader, RefreshCw, Edit, Save, Trash2,
   ExternalLink, FileText, Image
 } from 'lucide-react';
@@ -441,105 +440,7 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
   );
 }
 
-// Camera Scanner Component
-function QRScanner({ onScan, onError, onClose, lastScannedParticipant }) {
-  const scannerRef = useRef(null);
-  const [isScanned, setIsScanned] = useState(false);
 
-  useEffect(() => {
-    const startScanner = async () => {
-      try {
-        const scanner = new Html5Qrcode("reader");
-        scannerRef.current = scanner;
-        
-        const config = {
-          fps: 60,
-          qrbox: { width: 280, height: 280 },
-          aspectRatio: 1,
-          disableFlip: false
-        };
-
-        await scanner.start(
-          { facingMode: "environment" },
-          config,
-          (decodedText) => {
-            if (!isScanned) {
-              try {
-                const parsed = JSON.parse(decodedText);
-                if (parsed.type === "ADAGE_ENTRY" && parsed.id) {
-                  onScan(parsed.id);
-                  setIsScanned(true);
-                  if (navigator.vibrate) {
-                    navigator.vibrate(100);
-                  }
-                  // Reset scanner state after delay
-                  setTimeout(() => setIsScanned(false), 3000);
-                }
-              } catch (err) {
-                console.warn("Invalid QR Format", err);
-              }
-            }
-          },
-          (errorMessage) => {
-            // Quietly catch logs
-          }
-        );
-      } catch (err) {
-        onError(err.message || "Camera access failed.");
-      }
-    };
-
-    startScanner();
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(err => {
-          console.warn("Error stopping scanner:", err);
-        }).finally(() => {
-          const container = document.getElementById("reader");
-          if (container) {
-            container.innerHTML = "";
-          }
-        });
-      }
-    };
-  }, [onScan, onError, isScanned]);
-
-  return (
-    <div className="relative w-full aspect-square bg-black rounded-lg overflow-hidden shadow-md border-4 transition-colors duration-300 border-white/10">
-      <div id="reader" className="w-full h-full object-cover" />
-      
-      {!isScanned && (
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="relative w-64 h-64 border-2 border-white/10 rounded-[2rem]">
-            <div className="absolute -top-1 -left-1 w-12 h-12 border-t-4 border-l-4 border-gold rounded-tl-2xl" />
-            <div className="absolute -top-1 -right-1 w-12 h-12 border-t-4 border-r-4 border-gold rounded-tr-2xl" />
-            <div className="absolute -bottom-1 -left-1 w-12 h-12 border-b-4 border-l-4 border-gold rounded-bl-2xl" />
-            <div className="absolute -bottom-1 -right-1 w-12 h-12 border-b-4 border-r-4 border-gold rounded-br-2xl" />
-            <div className="absolute top-0 left-0 w-full h-1 bg-gold/30 animate-pulse" />
-          </div>
-        </div>
-      )}
-
-      {isScanned && (
-        <div className="absolute inset-0 bg-green-500/20 backdrop-blur-xl z-30 flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in duration-300">
-          <div className="bg-green-500 text-white p-4 rounded mb-6 animate-bounce">
-            <CheckCircle size={48} strokeWidth={4} />
-          </div>
-          <div className="text-center space-y-3 bg-black/80 p-8 rounded-[2rem] border-2 border-gold/30 shadow-md max-w-xs w-full">
-            <h4 className="text-white text-3xl font-cinzel font-black uppercase tracking-wider line-clamp-2">
-              {lastScannedParticipant?.name || "VERIFIED"}
-            </h4>
-          </div>
-        </div>
-      )}
-
-      <button onClick={onClose} className="absolute top-6 right-6 z-40 bg-black/50 hover:bg-red-500 text-white p-3 rounded backdrop-blur-md transition-all border border-white/10">
-        <X size={20} />
-      </button>
-    </div>
-  );
-}
 
 // MAIN ADMIN HUB
 export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fetchError, isLoading, onLogout }) {
@@ -548,9 +449,6 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [selectedId, setSelectedId] = useState(null);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-  const [isScannerActive, setIsScannerActive] = useState(false);
-  const [cameraError, setCameraError] = useState(null);
-  const [recentScans, setRecentScans] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
 
   // Dynamic DB events state for Editing
@@ -581,11 +479,7 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
     return registrations.find(r => r.id === selectedId) || null;
   }, [selectedId, registrations]);
 
-  const lastScannedParticipant = useMemo(() => {
-    if (recentScans.length === 0) return null;
-    const lastId = recentScans[0].id;
-    return registrations.find(r => r.id === lastId) || null;
-  }, [recentScans, registrations]);
+
 
   // Statistics calculation
   const stats = useMemo(() => {
@@ -595,20 +489,6 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
     const checkedIn = registrations.filter(r => r.status === ut.PRESENT).length;
     return { total, confirmed, pending, checkedIn };
   }, [registrations]);
-
-  const handleQrScan = async (scannedId) => {
-    const matched = registrations.find(r => r.id.toUpperCase() === scannedId.trim().toUpperCase());
-    if (matched) {
-      if (matched.status !== ut.PRESENT) {
-        await onUpdateStatus(matched.id, ut.PRESENT);
-      }
-      setRecentScans(prev => {
-        const filtered = prev.filter(r => r.id !== matched.id);
-        return [{ id: matched.id, name: matched.name }, ...filtered].slice(0, 5);
-      });
-      setSelectedId(matched.id);
-    }
-  };
 
   const filteredRegistrations = registrations.filter(item => {
     const query = searchQuery.toLowerCase();
@@ -791,12 +671,11 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
               {[
                 { id: "registrations", label: "Registrations", icon: <ClipboardList size={16} /> },
                 { id: "events", label: "Events", icon: <Edit size={16} /> },
-                { id: "scanner", label: "Scanner", icon: <QrCode size={16} /> },
                 { id: "settings", label: "Settings", icon: <Settings size={16} /> }
               ].map(t => (
                 <button
                   key={t.id}
-                  onClick={() => { setTab(t.id); setIsScannerActive(false); }}
+                  onClick={() => setTab(t.id)}
                   className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-[10px] font-cad font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap flex-1 justify-center ${
                     tab === t.id
                       ? "bg-[#C8922A] text-black shadow-lg shadow-[#C8922A]/20 font-black"
@@ -1007,69 +886,7 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
             </div>
           )}
 
-          {/* TAB 3: QR CODE SCANNER */}
-          {tab === "scanner" && (
-            <div className="p-8 md:p-16 flex flex-col items-center animate-in slide-in-from-bottom-10 h-full">
-              <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-5 gap-12">
-                <div className="lg:col-span-3 space-y-8">
-                  {isScannerActive ? (
-                    <QRScanner
-                      onScan={handleQrScan}
-                      onError={setCameraError}
-                      onClose={() => setIsScannerActive(false)}
-                      lastScannedParticipant={lastScannedParticipant}
-                    />
-                  ) : (
-                    <div className="aspect-square bg-black/40 border border-white/5 p-16 rounded-xl flex flex-col items-center justify-center space-y-12">
-                      <QrCode size={64} className="text-gold" />
-                      <button
-                        onClick={() => { setIsScannerActive(true); setCameraError(null); }}
-                        className="w-full bg-gold text-black py-7 rounded-lg font-cinzel text-3xl font-black uppercase tracking-widest hover:bg-[#B07A20] glow-gold transition-all"
-                      >
-                        Start Scanner
-                      </button>
-                    </div>
-                  )}
 
-                  {cameraError && (
-                    <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center gap-3">
-                      <AlertTriangle />
-                      <span>{cameraError}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="bg-black/20 rounded-lg border border-white/5 p-10 h-full">
-                    <h4 className="text-lg font-cinzel font-bold text-white uppercase tracking-widest mb-8 border-b border-white/5 pb-4">
-                      Real-time Check-ins
-                    </h4>
-                    
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {recentScans.map((scan, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-4 p-5 bg-green-500/5 rounded-3xl border border-green-500/10 animate-in slide-in-from-right-4 cursor-pointer"
-                          onClick={() => setSelectedId(scan.id)}
-                        >
-                          <CheckCircle size={20} className="text-green-500" />
-                          <div className="min-w-0">
-                            <h5 className="text-xs font-black text-white truncate">{scan.name}</h5>
-                            <p className="text-[9px] text-gray-400 font-mono">{scan.id}</p>
-                          </div>
-                        </div>
-                      ))}
-                      {recentScans.length === 0 && (
-                        <p className="text-center text-gray-400 text-[10px] py-10">
-                          Scan a QR code to begin attendance check-in.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* TAB 4: ADMIN SETTINGS */}
           {tab === "settings" && (
