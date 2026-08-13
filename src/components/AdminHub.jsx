@@ -1280,37 +1280,36 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
 
               {/* Prominent Payment & Screenshot Verification Review Box */}
               <div className="bg-[#080808] p-6 rounded-2xl border border-[#C8922A]/40 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+                <div className="border-b border-white/[0.08] pb-3">
                   <span className="text-xs font-cad font-bold text-[#C8922A] uppercase tracking-[0.2em]">
                     PAYMENT RECEIPT & UTR VERIFICATION
                   </span>
-                  <span className="text-[10px] text-gray-400 font-cad">
-                    Click image to expand / view full screen
-                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
                   {/* Left Column: Transaction Details (1 col) */}
-                  <div className="space-y-4 bg-black/60 p-5 rounded-xl border border-white/[0.08]">
-                    <div>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">12-Digit UTR (Transaction ID)</span>
-                      <p className="text-[#C8922A] font-mono font-black text-lg sm:text-xl tracking-widest select-all bg-[#0A0D14] p-3 rounded border border-[#C8922A]/30">
-                        {selectedParticipant.transactionId}
-                      </p>
-                    </div>
+                  <div className="bg-black/60 p-5 rounded-xl border border-white/[0.08] flex flex-col justify-between space-y-4">
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">12-Digit UTR (Transaction ID)</span>
+                        <p className="text-[#C8922A] font-mono font-black text-lg sm:text-xl tracking-widest select-all bg-[#0A0D14] p-3 rounded border border-[#C8922A]/30">
+                          {selectedParticipant.transactionId}
+                        </p>
+                      </div>
 
-                    <div>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Total Fee Amount</span>
-                      <p className="text-white font-cinzel font-black text-2xl">
-                        ₹{selectedParticipant.totalFee || 0}
-                      </p>
-                    </div>
+                      <div>
+                        <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Total Fee Amount</span>
+                        <p className="text-white font-cinzel font-black text-2xl">
+                          ₹{selectedParticipant.totalFee || 0}
+                        </p>
+                      </div>
 
-                    <div>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Submitted On</span>
-                      <p className="text-gray-300 text-xs font-cad">
-                        {new Date(selectedParticipant.timestamp).toLocaleString()}
-                      </p>
+                      <div>
+                        <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Submitted On</span>
+                        <p className="text-gray-300 text-xs font-cad">
+                          {new Date(selectedParticipant.timestamp).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
 
                     {selectedParticipant.screenshotUrl && (
@@ -1326,35 +1325,29 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
                   </div>
 
                   {/* Right Column: BIG Payment Receipt Image Viewer (2 cols) */}
-                  <div className="md:col-span-2 space-y-2">
+                  <div className="md:col-span-2 space-y-2 flex flex-col">
                     <span className="text-[10px] text-gray-400 uppercase tracking-widest block font-cad">
                       Uploaded Screenshot Preview
                     </span>
                     {selectedParticipant.screenshotUrl ? (
-                      <div className="w-full h-80 sm:h-[420px] bg-black rounded-xl border-2 border-[#C8922A]/30 p-2 flex items-center justify-center relative group overflow-hidden shadow-2xl">
+                      <a
+                        href={selectedParticipant.screenshotUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 w-full min-h-[360px] sm:min-h-[420px] bg-black rounded-xl border-2 border-[#C8922A]/30 p-2 flex items-center justify-center relative overflow-hidden shadow-2xl block"
+                      >
                         <img
                           src={getDriveImageUrl(selectedParticipant.screenshotUrl)}
                           alt="UPI Payment Receipt"
-                          className="max-h-full max-w-full object-contain rounded transition-transform duration-300 group-hover:scale-105"
+                          className="max-h-full max-w-full object-contain rounded"
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.style.display = 'none';
                           }}
                         />
-                        <a
-                          href={selectedParticipant.screenshotUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 text-white transition-opacity duration-300 backdrop-blur-xs cursor-pointer"
-                        >
-                          <ExternalLink size={24} className="text-[#C8922A]" />
-                          <span className="text-xs font-cad font-bold uppercase tracking-widest text-[#C8922A]">
-                            Click to Open Full High-Res Image
-                          </span>
-                        </a>
-                      </div>
+                      </a>
                     ) : (
-                      <div className="w-full h-48 bg-black/40 rounded-xl border border-white/10 flex items-center justify-center text-center p-6">
+                      <div className="flex-1 w-full min-h-[200px] bg-black/40 rounded-xl border border-white/10 flex items-center justify-center text-center p-6">
                         <p className="text-xs text-gray-500 font-cad italic">
                           No payment screenshot uploaded for this registration.
                         </p>
