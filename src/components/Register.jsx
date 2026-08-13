@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import html2canvas from 'html2canvas-pro';
-import { Check, Info, Users, Smartphone, ShieldCheck, Download, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X } from 'lucide-react';
+import { Check, Info, Users, Smartphone, ShieldCheck, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X } from 'lucide-react';
 import { supabase } from '../supabase';
 import { Sr, Pt, ut } from '../events';
 import { uploadScreenshotToGoogleDrive } from '../utils/googleDrive';
@@ -29,36 +28,11 @@ export default function Register() {
   const activeEvents = dbEvents.length > 0 ? dbEvents : Sr;
   const navigate = useNavigate();
   const location = useLocation();
-  const passRef = useRef(null);
 
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState(null);
   const [createdRecord, setCreatedRecord] = useState(null);
-  const [qrBlobUrl, setQrBlobUrl] = useState("");
-
-  useEffect(() => {
-    let activeUrl = "";
-    if (createdRecord) {
-      const data = JSON.stringify({ id: createdRecord.id, type: "ADAGE_ENTRY" });
-      const api = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&bgcolor=000&color=C8922A&data=${encodeURIComponent(data)}`;
-      
-      fetch(api)
-        .then(r => r.blob())
-        .then(b => {
-          activeUrl = URL.createObjectURL(b);
-          setQrBlobUrl(activeUrl);
-        })
-        .catch(err => console.error("Error generating QR blob:", err));
-    }
-    
-    return () => {
-      if (activeUrl) {
-        URL.revokeObjectURL(activeUrl);
-      }
-    };
-  }, [createdRecord]);
 
   const [screenshotFile, setScreenshotFile] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
@@ -326,33 +300,7 @@ export default function Register() {
     }
   };
 
-  // Download pass PNG image
-  const handleDownloadPass = async () => {
-    if (passRef.current) {
-      setIsDownloading(true);
-      try {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const canvas = await html2canvas(passRef.current, {
-          backgroundColor: "#000000",
-          scale: 2,
-          useCORS: true,
-          logging: false
-        });
 
-        const link = document.createElement("a");
-        link.download = `ADAGE_ENTRY_PASS_${createdRecord?.id}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      } catch (err) {
-        console.error("Download failed:", err);
-        window.print();
-      } finally {
-        setIsDownloading(false);
-      }
-    }
-  };
-
-  // passQrCodeUrl is replaced by qrBlobUrl state
 
   const isUtrValid = form.transactionId.length === 12;
 
@@ -1131,7 +1079,7 @@ export default function Register() {
                   REGISTRATION COMPLETED
                 </span>
                 <h2 className="font-cinzel font-black text-2xl sm:text-4xl text-[#EDEBE6] uppercase tracking-wide mt-1 mb-2">
-                  OFFICIAL ENTRY PASS GENERATED
+                  REGISTRATION COMPLETED
                 </h2>
                 <p className="text-xs text-gray-400 font-cad max-w-md mx-auto">
                   Transaction logged under Ref: <span className="text-[#C8922A] font-bold">{createdRecord.transactionId}</span>. Status: <strong className="text-amber-400">Verification Pending</strong>.
@@ -1169,78 +1117,13 @@ export default function Register() {
                 </div>
               )}
 
-              {/* Digital Entry Pass Preview Card */}
-              <div className="relative max-w-sm mx-auto">
-                <div ref={passRef} className="bg-black border-2 border-[#C8922A] p-6 text-left relative overflow-hidden shadow-2xl">
-                  {/* Background CAD Grid Overlay */}
-                  <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px]" />
-
-                  {/* Pass Header */}
-                  <div className="flex justify-between items-start border-b border-[#C8922A]/40 pb-4 mb-5 relative z-10">
-                    <div>
-                      <span className="text-[9px] text-[#C8922A] font-cad font-bold tracking-[0.3em] uppercase block">
-                        DEPT OF CIVIL ENGG
-                      </span>
-                      <h3 className="font-cinzel font-black text-xl text-[#EDEBE6] tracking-widest uppercase">
-                        ADAGE'26 PASS
-                      </h3>
-                    </div>
-                    <Award size={24} className="text-[#C8922A]" />
-                  </div>
-
-                  {/* QR Code */}
-                  <div className="bg-white p-3 inline-block border border-[#C8922A] mb-5 relative z-10 w-full text-center">
-                    {qrBlobUrl ? (
-                      <img src={qrBlobUrl} alt="Pass QR Code" className="w-40 h-40 mx-auto" />
-                    ) : (
-                      <div className="w-40 h-40 flex items-center justify-center mx-auto">
-                        <Loader className="animate-spin text-[#C8922A]" size={24} />
-                      </div>
-                    )}
-                    <span className="text-[9px] font-cad font-bold text-black block mt-1 tracking-widest">
-                      ID: {createdRecord.id}
-                    </span>
-                  </div>
-
-                  {/* Participant Info */}
-                  <div className="space-y-3 font-cad text-xs relative z-10 border-t border-white/[0.08] pt-4">
-                    <div>
-                      <span className="text-[9px] text-gray-500 uppercase tracking-wider block">NAME</span>
-                      <strong className="text-[#EDEBE6] uppercase">{createdRecord.name}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-gray-500 uppercase tracking-wider block">COLLEGE</span>
-                      <span className="text-gray-300">{createdRecord.college}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-white/[0.06] pt-2">
-                      <div>
-                        <span className="text-[9px] text-gray-500 uppercase tracking-wider block">TOTAL FEE</span>
-                        <strong className="text-[#C8922A]">₹{createdRecord.totalFee}</strong>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[9px] text-gray-500 uppercase tracking-wider block">VERIFICATION</span>
-                        <span className="text-amber-400 font-bold">PENDING</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+              {/* Action Button */}
+              <div className="flex justify-center max-w-md mx-auto">
                 <button
                   onClick={() => navigate("/verify")}
-                  className="btn-primary justify-center py-4 text-xs tracking-widest sm:flex-1"
+                  className="btn-primary justify-center py-4 text-xs tracking-widest w-full"
                 >
                   CHECK STATUS <ArrowRight size={16} />
-                </button>
-                <button
-                  onClick={handleDownloadPass}
-                  disabled={isDownloading}
-                  className="btn-ghost justify-center py-4 text-xs tracking-widest sm:flex-1 disabled:opacity-50"
-                >
-                  {isDownloading ? <Loader className="animate-spin" size={16} /> : <Download size={16} />}
-                  DOWNLOAD PASS
                 </button>
               </div>
             </div>
