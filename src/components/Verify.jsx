@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import html2canvas from 'html2canvas-pro';
-import { Mail, Search, CheckCircle, Clock, AlertCircle, XCircle, ArrowRight, RefreshCw, Loader, Download, Award } from 'lucide-react';
+import { Mail, Search, CheckCircle, Clock, AlertCircle, XCircle, ArrowRight, RefreshCw, Loader } from 'lucide-react';
 import { supabase } from '../supabase';
 import { ut } from '../events';
 
@@ -11,59 +10,7 @@ export default function Verify() {
   const [isSearching, setIsSearching] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [isLive, setIsLive] = useState(false);
-  const [qrBlobUrl, setQrBlobUrl] = useState("");
-  const [isDownloading, setIsDownloading] = useState(false);
-  const passRef = useRef(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let activeUrl = "";
-    if (registration && (registration.status === ut.CONFIRMED || registration.status === ut.PRESENT || registration.status === ut.PENDING)) {
-      const data = JSON.stringify({ id: registration.id, type: "ADAGE_ENTRY" });
-      const api = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&bgcolor=000&color=C8922A&data=${encodeURIComponent(data)}`;
-      
-      fetch(api)
-        .then(r => r.blob())
-        .then(b => {
-          activeUrl = URL.createObjectURL(b);
-          setQrBlobUrl(activeUrl);
-        })
-        .catch(err => console.error("Error generating QR blob:", err));
-    } else {
-      setQrBlobUrl("");
-    }
-    
-    return () => {
-      if (activeUrl) {
-        URL.revokeObjectURL(activeUrl);
-      }
-    };
-  }, [registration]);
-
-  const handleDownloadPass = async () => {
-    if (passRef.current) {
-      setIsDownloading(true);
-      try {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const canvas = await html2canvas(passRef.current, {
-          backgroundColor: "#000000",
-          scale: 2,
-          useCORS: true,
-          logging: false
-        });
-
-        const link = document.createElement("a");
-        link.download = `ADAGE_ENTRY_PASS_${registration?.id}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      } catch (err) {
-        console.error("Download failed:", err);
-        alert("Download failed - please take a screenshot of your pass instead.");
-      } finally {
-        setIsDownloading(false);
-      }
-    }
-  };
 
   const doSearch = async (email) => {
     try {
@@ -188,81 +135,13 @@ export default function Verify() {
 
               {/* Dashboard CTA */}
               {(registration.status === ut.CONFIRMED || registration.status === ut.PRESENT || registration.status === ut.PENDING) && (
-                <div className="p-4 sm:p-5 border-t border-white/[0.06] space-y-5">
-                  {/* Digital Entry Pass Preview Card */}
-                  <div className="relative max-w-sm mx-auto mb-6">
-                    <div ref={passRef} className="bg-black border-2 border-[#C8922A] p-6 text-left relative overflow-hidden shadow-2xl">
-                      {/* Background CAD Grid Overlay */}
-                      <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px]" />
-
-                      {/* Pass Header */}
-                      <div className="flex justify-between items-start border-b border-[#C8922A]/40 pb-4 mb-5 relative z-10">
-                        <div>
-                          <span className="text-[9px] text-[#C8922A] font-cad font-bold tracking-[0.3em] uppercase block">
-                            DEPT OF CIVIL ENGG
-                          </span>
-                          <h3 className="font-cinzel font-black text-xl text-[#EDEBE6] tracking-widest uppercase">
-                            ADAGE'26 PASS
-                          </h3>
-                        </div>
-                        <Award size={24} className="text-[#C8922A]" />
-                      </div>
-
-                      {/* QR Code */}
-                      <div className="bg-white p-3 inline-block border border-[#C8922A] mb-5 relative z-10 w-full text-center">
-                        {qrBlobUrl ? (
-                          <img src={qrBlobUrl} alt="Pass QR Code" className="w-40 h-40 mx-auto" />
-                        ) : (
-                          <div className="w-40 h-40 flex items-center justify-center mx-auto">
-                            <Loader className="animate-spin text-[#C8922A]" size={24} />
-                          </div>
-                        )}
-                        <span className="text-[9px] font-cad font-bold text-black block mt-1 tracking-widest">
-                          ID: {registration.id}
-                        </span>
-                      </div>
-
-                      {/* Participant Info */}
-                      <div className="space-y-3 font-cad text-xs relative z-10 border-t border-white/[0.08] pt-4">
-                        <div>
-                          <span className="text-[9px] text-gray-500 uppercase tracking-wider block">NAME</span>
-                          <strong className="text-[#EDEBE6] uppercase">{registration.name}</strong>
-                        </div>
-                        <div>
-                          <span className="text-[9px] text-gray-500 uppercase tracking-wider block">COLLEGE</span>
-                          <span className="text-gray-300">{registration.college}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-white/[0.06] pt-2">
-                          <div>
-                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block">TOTAL FEE</span>
-                            <strong className="text-[#C8922A]">₹{registration.totalFee}</strong>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block">VERIFICATION</span>
-                            <span className={`font-bold uppercase ${cfg.color}`}>{registration.status}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions Container */}
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      onClick={handleDownloadPass}
-                      disabled={isDownloading}
-                      className="btn-ghost justify-center py-4 text-xs tracking-widest sm:flex-1 disabled:opacity-50"
-                    >
-                      {isDownloading ? <Loader className="animate-spin" size={16} /> : <Download size={16} />}
-                      DOWNLOAD PASS
-                    </button>
-                    <button
-                      onClick={() => { localStorage.setItem('adage_user_email', registration.email); navigate('/dashboard'); }}
-                      className="btn-primary justify-center py-4 text-xs tracking-widest sm:flex-1"
-                    >
-                      Go to Dashboard <ArrowRight size={13} />
-                    </button>
-                  </div>
+                <div className="p-4 sm:p-5 border-t border-white/[0.06]">
+                  <button
+                    onClick={() => { localStorage.setItem('adage_user_email', registration.email); navigate('/dashboard'); }}
+                    className="btn-primary justify-center py-4 text-xs tracking-widest w-full"
+                  >
+                    Go to Dashboard <ArrowRight size={13} />
+                  </button>
                 </div>
               )}
             </div>

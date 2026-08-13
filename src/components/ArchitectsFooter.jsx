@@ -8,7 +8,7 @@ export default function ArchitectsFooter() {
     },
     {
       name: "JEO JUSTIN J K",
-      dept: "DEPARTMENT OF CSE"
+      dept: "DEPARTMENT OF COMPUTER SCIENCE AND ENGINNERING"
     }
   ];
 
