@@ -12,6 +12,7 @@ import Register from './components/Register';
 import Login from './components/Login';
 import AdminHub from './components/AdminHub';
 import Dashboard from './components/Dashboard';
+import Footer from './components/Footer';
 
 function ProtectedRoute({ children, isAuthenticated }) {
   const isLogged = isAuthenticated || localStorage.getItem('adage_admin_logged') === 'true';
@@ -261,6 +262,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
+
+        <Footer />
       </div>
     </Router>
   );
