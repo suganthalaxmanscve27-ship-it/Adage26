@@ -119,12 +119,16 @@ export default function Register() {
 
   // Selected events config
   const selectedEventsList = activeEvents.filter(event => form.selectedEvents.includes(event.id));
-  const hasTechSelected = selectedEventsList.some(event => event.category === Pt.TECHNICAL);
+  const techSelectedList = selectedEventsList.filter(event => event.category === Pt.TECHNICAL);
   const nonTechSelectedList = selectedEventsList.filter(event => event.category === Pt.NON_TECHNICAL);
+
+  const techCount = techSelectedList.length;
+  const nonTechCount = nonTechSelectedList.length;
+  const hasTechSelected = techCount > 0;
 
   // Maximum team size calculation
   const maxTeamCapacity = hasTechSelected
-    ? Math.max(...selectedEventsList.filter(e => e.category === Pt.TECHNICAL).map(e => e.maxMembers))
+    ? Math.max(...techSelectedList.map(e => e.maxMembers))
     : nonTechSelectedList.length > 0
     ? Math.max(...nonTechSelectedList.map(e => e.maxMembers))
     : 1;
@@ -132,8 +136,16 @@ export default function Register() {
   const validTeamCount = form.teamMembers.filter(name => name.trim() !== "").length;
   const totalParticipants = 1 + validTeamCount;
   
-  // Fee Calculation
-  const baseRate = hasTechSelected ? techBaseFee : nonTechBaseFee;
+  // Fee Calculation:
+  // - Max 2 Technical events allowed
+  // - For each Technical event, 1 Non-Technical event is FREE
+  const freeNonTechCount = Math.min(nonTechCount, techCount);
+  const paidNonTechCount = Math.max(0, nonTechCount - freeNonTechCount);
+
+  const baseRate = hasTechSelected
+    ? (techCount * techBaseFee) + (paidNonTechCount * nonTechBaseFee)
+    : (nonTechCount > 0 ? nonTechCount * nonTechBaseFee : 0);
+
   const totalPayableFee = totalParticipants * baseRate;
 
   // Set selected event from query params
@@ -203,12 +215,13 @@ export default function Register() {
         events = events.filter(e => e !== id);
       } else {
         const currentSelectedList = activeEvents.filter(e => events.includes(e.id));
-        const hasTech = currentSelectedList.some(e => e.category === Pt.TECHNICAL);
-        const hasNonTech = currentSelectedList.some(e => e.category === Pt.NON_TECHNICAL);
+        const currentTechCount = currentSelectedList.filter(e => e.category === Pt.TECHNICAL).length;
 
-        if (targetEvent.category === Pt.NON_TECHNICAL && hasTech && hasNonTech) {
+        // Rule 1: Max 2 technical events allowed
+        if (targetEvent.category === Pt.TECHNICAL && currentTechCount >= 2) {
           return prev;
         }
+
         events.push(id);
       }
 
@@ -447,10 +460,10 @@ export default function Register() {
                     <Sparkles className="text-[#C8922A] flex-shrink-0" size={20} />
                     <div>
                       <p className="text-xs font-bold text-[#C8922A] font-cad uppercase tracking-wider">
-                        BUNDLE UNLOCKED: 1 FREE NON-TECHNICAL EVENT
+                        BUNDLE OFFER: {techCount} FREE NON-TECHNICAL EVENT{techCount > 1 ? 'S' : ''}
                       </p>
                       <p className="text-[10px] text-gray-400 font-cad">
-                        Your Technical Registration automatically includes 1 complimentary Non-Technical Event entrance.
+                        You selected {techCount} Technical Event{techCount > 1 ? 's' : ''} (Max 2). For each Technical event, 1 Non-Technical event is complimentary!
                       </p>
                     </div>
                   </div>
@@ -464,22 +477,32 @@ export default function Register() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {activeEvents.map(event => {
                   const isSelected = form.selectedEvents.includes(event.id);
+                  const isTech = event.category === Pt.TECHNICAL;
                   const isNonTech = event.category === Pt.NON_TECHNICAL;
-                  const isBundleActiveForEvent = hasTechSelected && isNonTech;
 
-                  const hasAlreadySelectedNonTech = form.selectedEvents.some(id => {
-                    const matched = activeEvents.find(e => e.id === id);
-                    return matched && matched.category === Pt.NON_TECHNICAL;
-                  });
-                  const isLockedNonTech = hasTechSelected && isNonTech && hasAlreadySelectedNonTech && !isSelected;
+                  const isLockedTech = isTech && !isSelected && techCount >= 2;
+
+                  let isFreeNonTech = false;
+                  if (isNonTech) {
+                    if (isSelected) {
+                      const selectedNonTechIndex = nonTechSelectedList.findIndex(e => e.id === event.id);
+                      if (selectedNonTechIndex >= 0 && selectedNonTechIndex < techCount) {
+                        isFreeNonTech = true;
+                      }
+                    } else {
+                      if (hasTechSelected && nonTechCount < techCount) {
+                        isFreeNonTech = true;
+                      }
+                    }
+                  }
 
                   return (
                     <div
                       key={event.id}
-                      onClick={() => !isLockedNonTech && toggleEventSelection(event.id)}
+                      onClick={() => !isLockedTech && toggleEventSelection(event.id)}
                       className={`p-5 border transition-all duration-300 relative group ${
-                        isLockedNonTech
-                          ? "opacity-30 grayscale cursor-not-allowed bg-black/40 border-white/5"
+                        isLockedTech
+                          ? "opacity-40 grayscale cursor-not-allowed bg-black/40 border-white/5"
                           : "cursor-pointer"
                       } ${
                         isSelected
@@ -489,11 +512,18 @@ export default function Register() {
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <span className={`text-[8px] font-cad uppercase tracking-[0.2em] px-2 py-0.5 border ${
-                            event.category === Pt.TECHNICAL ? "border-amber-500/30 text-amber-400 bg-amber-500/5" : "border-cyan-500/30 text-cyan-400 bg-cyan-500/5"
-                          }`}>
-                            {event.category}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[8px] font-cad uppercase tracking-[0.2em] px-2 py-0.5 border ${
+                              isTech ? "border-amber-500/30 text-amber-400 bg-amber-500/5" : "border-cyan-500/30 text-cyan-400 bg-cyan-500/5"
+                            }`}>
+                              {event.category}
+                            </span>
+                            {isLockedTech && (
+                              <span className="text-[8px] font-cad text-rose-400 font-bold tracking-widest uppercase">
+                                [MAX 2 TECH]
+                              </span>
+                            )}
+                          </div>
                           <h4 className="font-cinzel font-bold text-sm sm:text-base text-[#EDEBE6] uppercase tracking-wide mt-2">
                             {event.title}
                           </h4>
@@ -515,10 +545,10 @@ export default function Register() {
                           <Users size={12} /> Max: {event.maxMembers} Member{event.maxMembers > 1 ? 's' : ''}
                         </span>
                         <span className="font-bold text-[#C8922A] text-xs">
-                          {isBundleActiveForEvent ? (
+                          {isFreeNonTech ? (
                             <span className="text-emerald-400 font-black">FREE (BUNDLE)</span>
                           ) : (
-                            `₹${event.fee}`
+                            `₹${event.fee || (isTech ? techBaseFee : nonTechBaseFee)}`
                           )}
                         </span>
                       </div>
