@@ -4,8 +4,6 @@ import { X, Phone, ArrowRight, Loader, Zap, FileText, Download } from 'lucide-re
 import { Sr, Pt } from '../events';
 import { supabase } from '../supabase';
 
-const DEFAULT_FALLBACK = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'%3E%3Crect width='800' height='400' fill='%230A0D14'/%3E%3Cg stroke='%23C8922A' stroke-width='1' stroke-opacity='0.25' fill='none'%3E%3Cpath d='M0 100h800M0 200h800M0 300h800M200 0v400M400 0v400M600 0v400'/%3E%3Cpath d='M150 350 L400 150 L650 350 Z' stroke-width='2' stroke-opacity='0.4'/%3E%3Ccircle cx='400' cy='150' r='8' stroke-opacity='0.5'/%3E%3Ctext x='400' y='380' text-anchor='middle' fill='%23C8922A' fill-opacity='0.5' font-family='monospace' font-size='14' letter-spacing='4'%3EADAGE '26 // CIVIL BLUEPRINT%3C/text%3E%3C/g%3E%3C/svg%3E";
-
 function EventModal({ event, onClose }) {
   if (!event) return null;
   return (
@@ -27,9 +25,8 @@ function EventModal({ event, onClose }) {
         {/* Modal header */}
         <div className="relative h-32 sm:h-40 flex-shrink-0 overflow-hidden bg-[#0A0D14]">
           <img
-            src={event.image || DEFAULT_FALLBACK}
+            src={event.image}
             alt=""
-            onError={e => { e.target.onerror = null; e.target.src = DEFAULT_FALLBACK; }}
             className="w-full h-full object-cover opacity-30"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-[#111]/60 to-transparent" />
@@ -230,10 +227,9 @@ export default function Events() {
                   {/* Blueprint visual box */}
                   <div className="relative h-36 sm:h-40 overflow-hidden mb-4 border border-white/[0.05] bg-[#0A0D14]">
                     <img
-                      src={event.image || DEFAULT_FALLBACK}
+                      src={event.image}
                       alt=""
                       loading="lazy"
-                      onError={e => { e.target.onerror = null; e.target.src = DEFAULT_FALLBACK; }}
                       className="w-full h-full object-cover opacity-45 group-hover:opacity-60 transition-opacity duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0A0D14] via-transparent to-transparent" />
