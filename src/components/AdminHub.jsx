@@ -1243,112 +1243,124 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
                 </div>
               </div>
 
-              {/* Detail Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-                {/* Left Column */}
-                <div className="space-y-6 bg-[#080808] p-6 rounded-2xl border border-white/[0.08]">
-                  <div>
-                    <span className="text-[10px] text-gray-500 font-cad uppercase tracking-[0.2em] block mb-2">ACADEMIC INSTITUTION</span>
-                    <p className="text-white font-bold text-base">{selectedParticipant.college}</p>
-                    <p className="text-[#C8922A] text-xs font-cad uppercase mt-0.5">{selectedParticipant.department}</p>
-                  </div>
-
-                  <div className="border-t border-white/[0.06] pt-4 space-y-3">
-                    <span className="text-[10px] text-gray-500 font-cad uppercase tracking-[0.2em] block">CONTACT DETAILS</span>
-                    <div className="flex items-center gap-3 text-gray-300 text-xs font-cad">
-                      <Mail size={14} className="text-[#C8922A]" />
-                      <span>{selectedParticipant.email}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-300 text-xs font-cad">
-                      <Phone size={14} className="text-[#C8922A]" />
-                      <span>{selectedParticipant.phone}</span>
-                    </div>
-                  </div>
-
-                  {/* Payment Information & Screenshot Preview */}
-                  <div className="border-t border-white/[0.06] pt-4 space-y-3 font-cad">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-[0.2em] block">
-                      PAYMENT INFORMATION & SCREENSHOT
-                    </span>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start bg-black/60 border border-[#C8922A]/30 p-4 rounded-xl">
-                      {/* Left Side: Transaction Details */}
-                      <div className="space-y-3">
-                        <div>
-                          <span className="text-[10px] text-gray-500 uppercase tracking-wider block">12-Digit UTR:</span>
-                          <strong className="text-[#C8922A] font-mono text-sm tracking-wider select-all">{selectedParticipant.transactionId}</strong>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-gray-500 uppercase tracking-wider block">Total Fee:</span>
-                          <strong className="text-white text-sm">₹{selectedParticipant.totalFee || 0}</strong>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-gray-500 uppercase tracking-wider block">Submitted On:</span>
-                          <span className="text-gray-400 text-[11px]">{new Date(selectedParticipant.timestamp).toLocaleString()}</span>
-                        </div>
-                      </div>
-
-                      {/* Right Side: Screenshot Image & Drive Button */}
-                      <div className="space-y-2">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Payment Receipt:</span>
-                        {selectedParticipant.screenshotUrl ? (
-                          <div className="space-y-2">
-                            <div className="w-full h-40 bg-black rounded-lg overflow-hidden border border-white/10 flex items-center justify-center p-1">
-                              <img
-                                src={getDriveImageUrl(selectedParticipant.screenshotUrl)}
-                                alt="UPI Payment Receipt"
-                                className="max-h-full max-w-full object-contain rounded"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                            <a
-                              href={selectedParticipant.screenshotUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="w-full py-2 px-3 bg-[#C8922A] text-black hover:bg-[#B07A20] font-cad font-bold text-[10px] rounded-lg uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md"
-                            >
-                              <ExternalLink size={12} /> Open in Google Drive
-                            </a>
-                          </div>
-                        ) : (
-                          <p className="text-[10px] text-gray-500 font-cad italic bg-black/40 p-3 rounded border border-white/5 text-center">
-                            No screenshot uploaded.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+              {/* Top Compact Summary Bar: Institution, Contact & Competitions */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#080808] p-5 rounded-2xl border border-white/[0.08]">
+                <div>
+                  <span className="text-[10px] text-gray-500 font-cad uppercase tracking-[0.2em] block mb-1">ACADEMIC INSTITUTION</span>
+                  <p className="text-white font-bold text-sm">{selectedParticipant.college}</p>
+                  <p className="text-[#C8922A] text-xs font-cad uppercase">{selectedParticipant.department}</p>
                 </div>
 
-                {/* Right Column */}
-                <div className="space-y-6 bg-[#080808] p-6 rounded-2xl border border-white/[0.08]">
-                  <div>
-                    <span className="text-[10px] text-gray-500 font-cad uppercase tracking-[0.2em] block mb-3">REGISTERED COMPETITIONS</span>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedParticipant.events.map((eTitle, idx) => (
-                        <span key={idx} className="bg-[#C8922A]/10 text-[#C8922A] text-xs font-cad font-bold uppercase px-3 py-1.5 rounded-lg border border-[#C8922A]/30">
-                          {eTitle}
-                        </span>
-                      ))}
+                <div>
+                  <span className="text-[10px] text-gray-500 font-cad uppercase tracking-[0.2em] block mb-1">CONTACT DETAILS</span>
+                  <p className="text-gray-300 text-xs font-cad flex items-center gap-1.5 mb-1">
+                    <Mail size={12} className="text-[#C8922A]" /> {selectedParticipant.email}
+                  </p>
+                  <p className="text-gray-300 text-xs font-cad flex items-center gap-1.5">
+                    <Phone size={12} className="text-[#C8922A]" /> {selectedParticipant.phone}
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-gray-500 font-cad uppercase tracking-[0.2em] block mb-1">COMPETITIONS & TEAM</span>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {selectedParticipant.events.map((eTitle, idx) => (
+                      <span key={idx} className="bg-[#C8922A]/10 text-[#C8922A] text-[10px] font-cad font-bold uppercase px-2 py-0.5 rounded border border-[#C8922A]/30">
+                        {eTitle}
+                      </span>
+                    ))}
+                  </div>
+                  {selectedParticipant.teamMembers && selectedParticipant.teamMembers.length > 0 && (
+                    <p className="text-[10px] text-gray-400 font-cad">
+                      Team: <span className="text-gray-200">{selectedParticipant.teamMembers.filter(Boolean).join(", ")}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Prominent Payment & Screenshot Verification Review Box */}
+              <div className="bg-[#080808] p-6 rounded-2xl border border-[#C8922A]/40 space-y-4">
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+                  <span className="text-xs font-cad font-bold text-[#C8922A] uppercase tracking-[0.2em]">
+                    PAYMENT RECEIPT & UTR VERIFICATION
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-cad">
+                    Click image to expand / view full screen
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                  {/* Left Column: Transaction Details (1 col) */}
+                  <div className="space-y-4 bg-black/60 p-5 rounded-xl border border-white/[0.08]">
+                    <div>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">12-Digit UTR (Transaction ID)</span>
+                      <p className="text-[#C8922A] font-mono font-black text-lg sm:text-xl tracking-widest select-all bg-[#0A0D14] p-3 rounded border border-[#C8922A]/30">
+                        {selectedParticipant.transactionId}
+                      </p>
                     </div>
+
+                    <div>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Total Fee Amount</span>
+                      <p className="text-white font-cinzel font-black text-2xl">
+                        ₹{selectedParticipant.totalFee || 0}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Submitted On</span>
+                      <p className="text-gray-300 text-xs font-cad">
+                        {new Date(selectedParticipant.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+
+                    {selectedParticipant.screenshotUrl && (
+                      <a
+                        href={selectedParticipant.screenshotUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-3 px-4 bg-[#C8922A] text-black hover:bg-[#B07A20] font-cad font-bold text-xs rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg mt-2"
+                      >
+                        <ExternalLink size={14} /> Open in Google Drive
+                      </a>
+                    )}
                   </div>
 
-                  {selectedParticipant.teamMembers && selectedParticipant.teamMembers.length > 0 && (
-                    <div className="border-t border-white/[0.06] pt-4">
-                      <span className="text-[10px] text-gray-500 font-cad uppercase tracking-[0.2em] block mb-3">TEAM MEMBERS ROSTER</span>
-                      <div className="space-y-2 font-cad text-xs">
-                        {selectedParticipant.teamMembers.map((m, idx) => (
-                          <div key={idx} className="flex items-center gap-2 bg-black/60 p-2.5 rounded-lg border border-white/[0.06]">
-                            <span className="text-[#C8922A] text-[10px] font-bold">#{idx + 2}</span>
-                            <span className="text-gray-200 font-bold">{m}</span>
-                          </div>
-                        ))}
+                  {/* Right Column: BIG Payment Receipt Image Viewer (2 cols) */}
+                  <div className="md:col-span-2 space-y-2">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-widest block font-cad">
+                      Uploaded Screenshot Preview
+                    </span>
+                    {selectedParticipant.screenshotUrl ? (
+                      <div className="w-full h-80 sm:h-[420px] bg-black rounded-xl border-2 border-[#C8922A]/30 p-2 flex items-center justify-center relative group overflow-hidden shadow-2xl">
+                        <img
+                          src={getDriveImageUrl(selectedParticipant.screenshotUrl)}
+                          alt="UPI Payment Receipt"
+                          className="max-h-full max-w-full object-contain rounded transition-transform duration-300 group-hover:scale-105"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                        <a
+                          href={selectedParticipant.screenshotUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 text-white transition-opacity duration-300 backdrop-blur-xs cursor-pointer"
+                        >
+                          <ExternalLink size={24} className="text-[#C8922A]" />
+                          <span className="text-xs font-cad font-bold uppercase tracking-widest text-[#C8922A]">
+                            Click to Open Full High-Res Image
+                          </span>
+                        </a>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-48 bg-black/40 rounded-xl border border-white/10 flex items-center justify-center text-center p-6">
+                        <p className="text-xs text-gray-500 font-cad italic">
+                          No payment screenshot uploaded for this registration.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
