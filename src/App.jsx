@@ -132,6 +132,8 @@ export default function App() {
 
   // Custom Cursor Mouse Listener
   useEffect(() => {
+    document.body.classList.add('custom-cursor-enabled');
+
     const onMouseMove = (e) => {
       setCursorPos({ x: e.clientX, y: e.clientY });
       if (!showCursor) setShowCursor(true);
@@ -139,7 +141,8 @@ export default function App() {
 
     const onMouseOver = (e) => {
       const target = e.target;
-      const isClickable = target.closest('a, button, [role="button"], input, select, textarea, .interactive-floor, .interactive-building-node');
+      if (!target || !(target instanceof Element)) return;
+      const isClickable = target.closest('a, button, [role="button"], input, select, textarea, label, .cursor-pointer, .interactive-floor, .interactive-building-node');
       setIsHoveringLink(!!isClickable);
     };
 

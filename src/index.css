@@ -195,15 +195,14 @@ body {
 
 /* Custom drafting crosshair/pencil cursor */
 @media (min-width: 768px) {
-  .custom-cursor-enabled {
-    cursor: none !important;
-  }
-  .custom-cursor-enabled a,
-  .custom-cursor-enabled button,
-  .custom-cursor-enabled [role="button"],
-  .custom-cursor-enabled input,
-  .custom-cursor-enabled select,
-  .custom-cursor-enabled textarea {
+  body.custom-cursor-enabled,
+  body.custom-cursor-enabled *,
+  body.custom-cursor-enabled *::before,
+  body.custom-cursor-enabled *::after,
+  .custom-cursor-enabled,
+  .custom-cursor-enabled *,
+  .custom-cursor-enabled *::before,
+  .custom-cursor-enabled *::after {
     cursor: none !important;
   }
 }

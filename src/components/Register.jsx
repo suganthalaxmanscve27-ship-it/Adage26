@@ -320,7 +320,7 @@ export default function Register() {
           <div className="inline-flex items-center gap-2 mb-3">
             <span className="w-8 h-px bg-[#C8922A]" />
             <span className="text-[10px] uppercase tracking-[0.4em] text-[#C8922A] font-cad font-bold">
-              CAD REGISTRATION PORTAL
+              REGISTRATION PORTAL
             </span>
             <span className="w-8 h-px bg-[#C8922A]" />
           </div>
