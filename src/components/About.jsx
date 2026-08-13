@@ -3,10 +3,10 @@ import { MapPin, Phone, Clock, Target, Globe, Users, Cpu, ShieldCheck, Compass, 
 
 export default function About() {
   const stats = [
-    { num: '1978', label: 'ESTABLISHED YEAR', spec: 'FOUNDATION' },
-    { num: '60+',  label: 'FACULTY EXPERTS', spec: 'PROFESSORS' },
-    { num: '5000+',label: 'ALUMNI NETWORK', spec: 'ENGINEERS' },
-    { num: '18+',  label: 'ADVANCED LABS', spec: 'FACILITIES' },
+    { num: '1985', label: 'ESTABLISHED YEAR', spec: 'FOUNDATION' },
+    { num: '15+',  label: 'FACULTY EXPERTS', spec: 'PROFESSORS' },
+    { num: '200+',label: 'ALUMNI NETWORK', spec: 'ENGINEERS' },
+    { num: '8+',  label: 'ADVANCED LABS', spec: 'FACILITIES' },
   ];
 
   const values = [

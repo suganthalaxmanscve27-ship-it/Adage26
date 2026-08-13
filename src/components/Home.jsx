@@ -400,9 +400,9 @@ export default function Home() {
   ];
 
   const highlights = [
-    { num: '600+', label: 'Participants', desc: 'Students from engineering colleges across South India.' },
-    { num: '15',   label: 'Events',       desc: 'Technical & non-technical civil engineering challenges.' },
-    { num: '20',   label: 'Colleges',     desc: 'Participating top-tier institutes and universities.' },
+    { num: '150+', label: 'Participants', desc: 'Students from engineering colleges across South India.' },
+    { num: '8',   label: 'Events',       desc: 'Technical & non-technical civil engineering challenges.' },
+    { num: '15+',   label: 'Colleges',     desc: 'Participating top-tier institutes and universities.' },
     { num: '₹20K', label: 'Prize Pool',   desc: 'Cash awards and trophies across all categories.' },
   ];
 

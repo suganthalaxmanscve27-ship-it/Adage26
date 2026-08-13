@@ -113,7 +113,7 @@ export default function Register() {
     }
   };
 
-  const upiId = "midhun73272@oksbi";
+  const upiId = "lithikajayabal@okicici";
   const techBaseFee = 250;
   const nonTechBaseFee = 150;
 
@@ -594,7 +594,7 @@ export default function Register() {
                     <span className="text-[10px] text-gray-400 font-cad uppercase">PARTICIPANT ROSTER</span>
                   </div>
                   <h2 className="font-cinzel font-black text-xl sm:text-2xl text-[#EDEBE6] uppercase">
-                    Team Roster & Profile Details
+                    Team Profile 
                   </h2>
                 </div>
 
@@ -783,22 +783,19 @@ export default function Register() {
                     UPI PAYMENT DETAILS
                   </span>
 
-                  {/* QR Code Placeholder Box */}
-                  <div className="bg-black/60 p-8 border-2 border-dashed border-[#C8922A]/40 flex flex-col items-center justify-center min-h-[200px] mb-4">
-                    <QrCode size={48} className="text-[#C8922A] mb-3 opacity-60" />
-                    <p className="text-xs font-cad font-bold text-[#EDEBE6] uppercase tracking-wider">
-                      [ QR CODE PLACEHOLDER ]
-                    </p>
-                    <p className="text-[9px] text-gray-500 font-cad mt-1">
-                      Scan via GPay / PhonePe / Paytm
-                    </p>
+                  {/* QR Code Container */}
+                  <div className="bg-white p-3 border border-[#C8922A]/40 inline-block mb-4 shadow-xl rounded-lg overflow-hidden">
+                    <img
+                      src="/payment_qr.png"
+                      alt="UPI Payment QR Code"
+                      className="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto"
+                    />
                   </div>
 
                   <div className="bg-black/80 border border-white/[0.08] p-3 text-center space-y-1">
                     <p className="text-[9px] text-gray-500 font-cad uppercase">UPI ID / VPA</p>
-                    <p className="text-xs font-cad font-bold text-[#C8922A] select-all">[ UPI ID PLACEHOLDER ]</p>
-                    <p className="text-[9px] text-gray-400 font-cad uppercase pt-1 border-t border-white/[0.06] mt-2">
-                      Payee: [ NAME PLACEHOLDER ]
+                    <p className="text-xs sm:text-sm font-mono font-bold text-[#C8922A] select-all tracking-wider">
+                      lithikajayabal@okicici
                     </p>
                   </div>
                 </div>
