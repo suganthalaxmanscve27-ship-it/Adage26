@@ -3,7 +3,7 @@ import { MapPin, Phone, Clock, Target, Globe, Users, Cpu, ShieldCheck, Compass, 
 
 export default function About() {
   const stats = [
-    { num: '1985', label: 'ESTABLISHED YEAR', spec: 'FOUNDATION' },
+    { num: '1984', label: 'ESTABLISHED YEAR', spec: 'FOUNDATION' },
     { num: '15+',  label: 'FACULTY EXPERTS', spec: 'PROFESSORS' },
     { num: '200+',label: 'ALUMNI NETWORK', spec: 'ENGINEERS' },
     { num: '8+',  label: 'ADVANCED LABS', spec: 'FACILITIES' },
@@ -34,8 +34,8 @@ export default function About() {
     //{ title: "Structural Engineering Lab", code: "LAB-01", desc: "Universal testing machines, hydraulic loading frames, and beam deflection rigs." },
     { title: "Strength of Materials", code: "LAB-01", desc: "Total Stations, Auto-levels, GPS mapping systems, and digital theodolites." },
     { title: "Surveying Lab", code: "LAB-02", desc: "Total Stations, Auto-levels, GPS mapping systems, and digital theodolites." },
-    { title: "Concrete Technology Lab", code: "LAB-03", desc: "Compressive testing apparatus, slump cones, aggregate shakers, and curing tanks." },
-    { title: "Soil Mechanics & Geo-Lab", code: "LAB-04", desc: "Direct shear apparatus, triaxial test cells, and compaction permeability units." },
+    { title: "Water Supply & Wastewater Lab", code: "LAB-03", desc: "Compressive testing apparatus, slump cones, aggregate shakers, and curing tanks." },
+    { title: "Soil Mechanics Lab", code: "LAB-04", desc: "Direct shear apparatus, triaxial test cells, and compaction permeability units." },
     { title: "Hydraulics Lab", code: "LAB-05", desc: "Venturimeter calibration rigs, flumes, hydraulic turbine models, and centrifugal pumps." },
     { title: "AutoCAD & CAD-Prompt Studio", code: "LAB-06", desc: "High-performance CAD workstations running AutoCAD, STAAD Pro, and structural AI tools." }
   ];

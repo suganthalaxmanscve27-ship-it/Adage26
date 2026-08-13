@@ -334,7 +334,6 @@ function AnimatedCounter({ value, duration = 1600 }) {
 export default function Home() {
   const essentials = [
     { icon: <ShieldCheck size={16} />, title: 'College ID Mandatory',    desc: 'Valid college ID card required at venue for all participants.' },
-    { icon: <QrCode       size={16} />, title: 'Digital Pass Required',  desc: 'Show your registration QR code at reception for entry.' },
     { icon: <Award        size={16} />, title: 'Certificates Provided',  desc: 'Hard-copy participation certificates for all attendees.' },
     { icon: <Utensils     size={16} />, title: 'Lunch Included',         desc: 'Complimentary lunch provided for every registered participant.' },
   ];
@@ -438,7 +437,7 @@ export default function Home() {
           <span className="section-label">Participant Essentials</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-white/[0.04]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/[0.04]">
           {essentials.map((item, i) => (
             <div key={i} className="bg-[#0C0C0C]/80 backdrop-blur-sm p-6 sm:p-8 hover:bg-[#111] transition-colors group border border-white/5 hover:border-[#C8922A]/20 animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
               <div className="text-[#C8922A] mb-4 sm:mb-5">{item.icon}</div>
