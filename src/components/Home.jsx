@@ -328,67 +328,7 @@ function AnimatedCounter({ value, duration = 1600 }) {
   return <span>{count}</span>;
 }
 
-// ─── Construction Progress Timeline Component ───────────────────────────
-function ConstructionTimeline() {
-  const phases = [
-    { title: "Excavation & Clearing", phase: "PHASE 01", event: "Registration", desc: "Teams check in at the reception, claim event passes, and receive technical layout instructions.", time: "08:30 AM", status: "Completed" },
-    { title: "Foundation Laying", phase: "PHASE 02", event: "Inauguration", desc: "Welcoming remarks from the HOD, lighting of the lamp, and keynote speech on Smart Infrastructure.", time: "09:30 AM", status: "Ongoing" },
-    { title: "Superstructure Framing", phase: "PHASE 03", event: "Paper Presentation & Technical Challenges", desc: "Technical Convergence: CAD Craft, Spruce Span load testing, Survey Elite field leveling, and Concrete Master design.", time: "10:30 AM", status: "Pending" },
-    { title: "Finishing Works", phase: "PHASE 04", event: "Non-Technical Events & Workshops", desc: "Urbanscapes city layouts pitch, Shutter Span photo review, and Mystery Block tower Jenga.", time: "01:30 PM", status: "Pending" },
-    { title: "Handover & Occupancy", phase: "PHASE 05", event: "Prize Distribution & Valedictory", desc: "Awarding cash pools, trophies, and certificates to winners of all structural competitions.", time: "04:00 PM", status: "Pending" }
-  ];
-  
-  return (
-    <section className="py-14 sm:py-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex items-center gap-3 sm:gap-4 mb-10 sm:mb-16">
-        <span className="section-label">03</span>
-        <div className="h-px flex-1 bg-white/[0.04]" />
-        <span className="section-label">Construction Progress Timeline</span>
-      </div>
 
-      <div className="relative border-l border-[#C8922A]/20 ml-4 md:ml-32 space-y-12">
-        {phases.map((item, idx) => (
-          <div key={idx} className="relative pl-6 md:pl-10 group">
-            {/* Timeline node */}
-            <div className="absolute -left-[9px] top-1.5 w-[18px] h-[18px] bg-[#0C0C0C] border-2 border-[#C8922A] flex items-center justify-center rotate-45 group-hover:scale-125 transition-transform duration-200">
-              <div className={`w-1.5 h-1.5 ${item.status === 'Completed' ? 'bg-[#C8922A]' : item.status === 'Ongoing' ? 'bg-[#C8922A] animate-pulse' : 'bg-transparent'}`} />
-            </div>
-            
-            {/* Left timeline offset containing timing metadata */}
-            <div className="hidden md:block absolute -left-[140px] top-0.5 text-right w-28">
-              <span className="text-[10px] font-mono text-[#C8922A] font-bold">{item.time}</span>
-              <p className="text-[8px] text-gray-500 font-mono tracking-widest mt-0.5">{item.phase}</p>
-            </div>
-            
-            <div className="bg-[#111]/40 border border-white/5 hover:border-[#C8922A]/30 p-5 sm:p-6 transition-all duration-300 relative overflow-hidden">
-              {/* Engineering border tick */}
-              <div className="absolute top-0 right-0 w-12 h-px bg-gradient-to-r from-transparent to-[#C8922A]" />
-              
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-                <div>
-                  <span className="text-[8px] font-mono text-[#C8922A]/80 uppercase tracking-widest">{item.title}</span>
-                  <h3 className="text-white text-sm sm:text-base font-cinzel font-bold mt-0.5 uppercase tracking-wide">{item.event}</h3>
-                </div>
-                <span className={`text-[8px] font-mono uppercase tracking-widest px-2 py-0.5 border ${
-                  item.status === 'Completed' ? 'border-emerald-500/20 text-emerald-400 bg-emerald-950/10' :
-                  item.status === 'Ongoing' ? 'border-[#C8922A]/20 text-[#C8922A] bg-[#C8922A]/5' :
-                  'border-white/5 text-gray-500'
-                }`}>
-                  {item.status}
-                </span>
-              </div>
-              <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
-              <div className="md:hidden mt-3 flex justify-between text-[9px] font-mono text-gray-500">
-                <span>{item.phase}</span>
-                <span>{item.time}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 // ─── Main Exported Home Component ───────────────────────────────────────
 export default function Home() {
@@ -544,10 +484,7 @@ export default function Home() {
         </div>
       </section>
 
-      <BeamJointDivider />
 
-      {/* ── Timeline Section ─────────────────────────────── */}
-      <ConstructionTimeline />
 
       <BeamJointDivider type="beams" />
 
