@@ -9,6 +9,16 @@ import {
   ExternalLink, FileText, Image
 } from 'lucide-react';
 
+const getDriveImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('data:image')) return url;
+  const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch && fileIdMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
+  }
+  return url;
+};
+
 // Manual Entry Modal
 function ManualEntryModal({ onClose, onSave }) {
   const [isSaving, setIsSaving] = useState(false);
@@ -1255,48 +1265,61 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
                     </div>
                   </div>
 
-                  <div className="border-t border-white/[0.06] pt-4 space-y-2 font-cad text-xs">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-[0.2em] block">PAYMENT INFORMATION</span>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">12-Digit UTR:</span>
-                      <strong className="text-[#C8922A] tracking-wider">{selectedParticipant.transactionId}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Fee:</span>
-                      <strong className="text-white">₹{selectedParticipant.totalFee || 0}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Submitted On:</span>
-                      <span className="text-gray-400 text-[11px]">{new Date(selectedParticipant.timestamp).toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Google Drive UPI Screenshot Display */}
+                  {/* Payment Information & Screenshot Preview */}
                   <div className="border-t border-white/[0.06] pt-4 space-y-3 font-cad">
                     <span className="text-[10px] text-gray-500 uppercase tracking-[0.2em] block">
-                      UPI PAYMENT SCREENSHOT (GOOGLE DRIVE)
+                      PAYMENT INFORMATION & SCREENSHOT
                     </span>
-                    {selectedParticipant.screenshotUrl ? (
-                      <div className="bg-black/60 border border-[#C8922A]/30 p-3 rounded-xl space-y-3">
-                        {(selectedParticipant.screenshotUrl.startsWith("data:image") || selectedParticipant.screenshotUrl.includes("supabase.co") || selectedParticipant.screenshotUrl.includes("googleusercontent.com")) && (
-                          <div className="w-full h-36 bg-black rounded-lg overflow-hidden border border-white/10 flex items-center justify-center">
-                            <img src={selectedParticipant.screenshotUrl} alt="UPI Payment Receipt" className="max-h-full max-w-full object-contain" />
-                          </div>
-                        )}
-                        <a
-                          href={selectedParticipant.screenshotUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-full py-2.5 px-4 bg-[#C8922A] text-black hover:bg-[#B07A20] font-cad font-bold text-xs rounded-lg uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md"
-                        >
-                          <ExternalLink size={14} /> Open Screenshot in Google Drive
-                        </a>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start bg-black/60 border border-[#C8922A]/30 p-4 rounded-xl">
+                      {/* Left Side: Transaction Details */}
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-[10px] text-gray-500 uppercase tracking-wider block">12-Digit UTR:</span>
+                          <strong className="text-[#C8922A] font-mono text-sm tracking-wider select-all">{selectedParticipant.transactionId}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-500 uppercase tracking-wider block">Total Fee:</span>
+                          <strong className="text-white text-sm">₹{selectedParticipant.totalFee || 0}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-500 uppercase tracking-wider block">Submitted On:</span>
+                          <span className="text-gray-400 text-[11px]">{new Date(selectedParticipant.timestamp).toLocaleString()}</span>
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-[11px] text-gray-500 font-cad italic bg-black/40 p-2.5 rounded border border-white/5 text-center">
-                        No payment screenshot uploaded.
-                      </p>
-                    )}
+
+                      {/* Right Side: Screenshot Image & Drive Button */}
+                      <div className="space-y-2">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Payment Receipt:</span>
+                        {selectedParticipant.screenshotUrl ? (
+                          <div className="space-y-2">
+                            <div className="w-full h-40 bg-black rounded-lg overflow-hidden border border-white/10 flex items-center justify-center p-1">
+                              <img
+                                src={getDriveImageUrl(selectedParticipant.screenshotUrl)}
+                                alt="UPI Payment Receipt"
+                                className="max-h-full max-w-full object-contain rounded"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                            <a
+                              href={selectedParticipant.screenshotUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-full py-2 px-3 bg-[#C8922A] text-black hover:bg-[#B07A20] font-cad font-bold text-[10px] rounded-lg uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md"
+                            >
+                              <ExternalLink size={12} /> Open in Google Drive
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-gray-500 font-cad italic bg-black/40 p-3 rounded border border-white/5 text-center">
+                            No screenshot uploaded.
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
