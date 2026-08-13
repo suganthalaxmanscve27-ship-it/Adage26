@@ -167,8 +167,9 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
     description: event?.description || "",
     slogan: event?.slogan || "",
     category: event?.category || "Technical",
-    maxMembers: event?.maxMembers || 1,
-    fee: event?.fee || 0,
+    maxMembers: event?.maxMembers || event?.max_members || 1,
+    fee: event?.fee ?? event?.price ?? 0,
+    prize: event?.prize || "Certificate + Cash Prize",
     timing: event?.timing || "",
     image: event?.image || "",
     whatsappLink: event?.whatsappLink || event?.whatsapp_link || "",
@@ -325,6 +326,17 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
             </div>
 
             <div className="space-y-2">
+              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Prize Details / Pool</label>
+              <input
+                type="text"
+                value={form.prize}
+                onChange={e => setForm({ ...form, prize: e.target.value })}
+                placeholder="Certificate + Cash Prize"
+                className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
+              />
+            </div>
+
+            <div className="col-span-1 md:col-span-2 space-y-2">
               <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">WhatsApp Group Link</label>
               <input
                 type="url"
@@ -613,38 +625,32 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
 
   const handleSaveEvent = async (updatedEvent, isNew = false) => {
     try {
+      const payload = {
+        description: updatedEvent.description,
+        slogan: updatedEvent.slogan,
+        category: updatedEvent.category,
+        maxMembers: updatedEvent.maxMembers,
+        fee: updatedEvent.fee,
+        prize: updatedEvent.prize,
+        timing: updatedEvent.timing,
+        image: updatedEvent.image,
+        whatsappLink: updatedEvent.whatsappLink,
+        rules: updatedEvent.rules,
+        coordinators: updatedEvent.coordinators
+      };
+
       if (isNew) {
+        payload.id = updatedEvent.id;
+        payload.title = updatedEvent.title;
         const { error } = await supabase
           .from('events')
-          .insert([{
-            id: updatedEvent.id,
-            title: updatedEvent.title,
-            description: updatedEvent.description,
-            slogan: updatedEvent.slogan,
-            category: updatedEvent.category,
-            maxMembers: updatedEvent.maxMembers,
-            fee: updatedEvent.fee,
-            timing: updatedEvent.timing,
-            image: updatedEvent.image,
-            whatsappLink: updatedEvent.whatsappLink,
-            rules: updatedEvent.rules,
-            coordinators: updatedEvent.coordinators
-          }]);
+          .insert([payload]);
         if (error) throw error;
         alert("Event created successfully!");
       } else {
         const { error } = await supabase
           .from('events')
-          .update({
-            description: updatedEvent.description,
-            slogan: updatedEvent.slogan,
-            fee: updatedEvent.fee,
-            timing: updatedEvent.timing,
-            image: updatedEvent.image,
-            whatsappLink: updatedEvent.whatsappLink,
-            rules: updatedEvent.rules,
-            coordinators: updatedEvent.coordinators
-          })
+          .update(payload)
           .eq('id', updatedEvent.id);
         if (error) throw error;
         alert("Event updated successfully!");
@@ -970,7 +976,10 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
                       <div>
                         <div className="flex justify-between items-start mb-3">
                           <span className="text-[9px] font-bold text-gold uppercase tracking-widest">{event.category}</span>
-                          <span className="text-[10px] text-gray-400 font-bold">₹{event.fee} / head</span>
+                          <div className="text-right">
+                            <span className="text-[10px] text-gray-300 font-bold block">₹{event.fee || 0} / head</span>
+                            {event.prize && <span className="text-[9px] text-[#C8922A] font-mono block">{event.prize}</span>}
+                          </div>
                         </div>
                         <h4 className="text-lg font-cinzel font-bold text-white uppercase tracking-wider mb-2">{event.title}</h4>
                         {event.slogan && <p className="text-xs text-gold/60 italic mb-4">"{event.slogan}"</p>}

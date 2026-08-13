@@ -31,11 +31,12 @@ export default function About() {
   ];
 
   const laboratories = [
-    { title: "Structural Engineering Lab", code: "LAB-01", desc: "Universal testing machines, hydraulic loading frames, and beam deflection rigs." },
-    { title: "Surveying & Geomatics Lab", code: "LAB-02", desc: "Total Stations, Auto-levels, GPS mapping systems, and digital theodolites." },
+    //{ title: "Structural Engineering Lab", code: "LAB-01", desc: "Universal testing machines, hydraulic loading frames, and beam deflection rigs." },
+    { title: "Strength of Materials", code: "LAB-01", desc: "Total Stations, Auto-levels, GPS mapping systems, and digital theodolites." },
+    { title: "Surveying Lab", code: "LAB-02", desc: "Total Stations, Auto-levels, GPS mapping systems, and digital theodolites." },
     { title: "Concrete Technology Lab", code: "LAB-03", desc: "Compressive testing apparatus, slump cones, aggregate shakers, and curing tanks." },
     { title: "Soil Mechanics & Geo-Lab", code: "LAB-04", desc: "Direct shear apparatus, triaxial test cells, and compaction permeability units." },
-    { title: "Hydraulics & Fluid Mechanics", code: "LAB-05", desc: "Venturimeter calibration rigs, flumes, hydraulic turbine models, and centrifugal pumps." },
+    { title: "Hydraulics Lab", code: "LAB-05", desc: "Venturimeter calibration rigs, flumes, hydraulic turbine models, and centrifugal pumps." },
     { title: "AutoCAD & CAD-Prompt Studio", code: "LAB-06", desc: "High-performance CAD workstations running AutoCAD, STAAD Pro, and structural AI tools." }
   ];
 
@@ -58,7 +59,7 @@ export default function About() {
               <div className="inline-flex items-center gap-2">
                 <span className="w-8 h-px bg-[#C8922A]" />
                 <span className="text-[10px] uppercase tracking-[0.4em] text-[#C8922A] font-cad font-bold">
-                  CAD SPECIFICATION // ABOUT DEPT
+                  ABOUT DEPT
                 </span>
               </div>
 
