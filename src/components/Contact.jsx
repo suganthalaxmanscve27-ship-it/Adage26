@@ -82,38 +82,6 @@ export default function Contact() {
             </a>
           ))}
         </div>
-
-        {/* Google Maps Location Banner */}
-        <div className="bg-[#0C0C0C] border border-white/10 rounded-2xl overflow-hidden relative group h-56 sm:h-64 shadow-xl">
-          <iframe
-            title="GCE Erode Location Map"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3910.3702587508753!2d77.67876877508535!3d11.45524318873722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba9680a653bb7e5%3A0xbefbe4fd0a790589!2sGovernment%20College%20of%20Engineering%2C%20Erode!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
-            width="100%"
-            height="100%"
-            className="border-0 opacity-40 hover:opacity-75 transition-opacity duration-300 grayscale hover:grayscale-0"
-            allowFullScreen
-            loading="lazy"
-          />
-          <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <p className="text-white font-cinzel font-bold text-xs sm:text-sm uppercase tracking-wider">
-                Government College of Engineering, Erode
-              </p>
-              <p className="text-gray-400 text-[10px] font-cad">
-                Department of Civil Engineering · Suriyampalayam, Erode — 638 316
-              </p>
-            </div>
-            <a
-              href="https://maps.app.goo.gl/dpZ1Amf1r3dFJqK29"
-              target="_blank"
-              rel="noreferrer"
-              className="btn-outline-gold py-2 px-4 text-[10px] tracking-widest uppercase flex-shrink-0"
-            >
-              Open in Google Maps ↗
-            </a>
-          </div>
-        </div>
-
       </div>
     </div>
   );
