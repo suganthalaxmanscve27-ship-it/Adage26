@@ -13,8 +13,8 @@ export default function Contact() {
     {
       icon: <Globe size={22} className="text-[#C8922A]" />,
       label: 'INSTAGRAM / SOCIAL',
-      val: '@adage_gceerode',
-      link: 'https://instagram.com/adage_gceerode',
+      val: '@civiladage_gcee',
+      link: 'https://www.instagram.com/civiladage_gcee',
       actionText: 'Follow ↗'
     },
     {
