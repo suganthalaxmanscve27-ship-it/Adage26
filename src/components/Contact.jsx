@@ -11,13 +11,6 @@ export default function Contact() {
       actionText: 'Send Email ↗'
     },
     {
-      icon: <Phone size={22} className="text-[#C8922A]" />,
-      label: 'PHONE CONTACT',
-      val: '+91 81225 78554',
-      link: 'tel:+918122578554',
-      actionText: 'Call Us ↗'
-    },
-    {
       icon: <Globe size={22} className="text-[#C8922A]" />,
       label: 'INSTAGRAM / SOCIAL',
       val: '@adage_gceerode',
@@ -48,13 +41,10 @@ export default function Contact() {
           <h2 className="font-cinzel font-black text-2xl sm:text-4xl text-[#EDEBE6] uppercase tracking-wide">
             Official Contact & Support
           </h2>
-          <p className="text-gray-400 text-xs sm:text-sm font-cad mt-2">
-            For inquiries, event questions, or symposium assistance, reach out directly via email or telephone.
-          </p>
         </div>
 
-        {/* 4 Info Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10 animate-fade-in-up">
+        {/* 3 Info Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 animate-fade-in-up">
           {infoCards.map((card, idx) => (
             <a
               key={idx}
