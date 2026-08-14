@@ -5,6 +5,7 @@ import { lp } from '../events';
 import ThreeDText from './ThreeDText';
 import AdageLogo from './AdageLogo';
 import NavWireframeLogo from './NavWireframeLogo';
+import Contact from './Contact';
 
 // ─── Countdown Timer Component ──────────────────────────────────────────
 export function CountdownTimer({ targetDate, outlineOnly = false, hideText = false }) {
@@ -486,8 +487,10 @@ export default function Home() {
 
       <BeamJointDivider type="beams" />
 
-      {/* ── Architects of the Digital Stage & Footer ─────── */}
-     
+      {/* ── Contact Section ──────────────────────────────── */}
+      <section className="relative z-10">
+        <Contact />
+      </section>
     </div>
   );
 }
