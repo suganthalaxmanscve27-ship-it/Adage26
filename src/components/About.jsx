@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Clock, Target, Globe, Users, Cpu, ShieldCheck, Compass, Layers, Award, ArrowUpRight } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Target, Globe, Users, Cpu, ShieldCheck, Compass, Layers, Award, ArrowUpRight } from 'lucide-react';
 
 export default function About() {
   const stats = [
@@ -42,7 +42,7 @@ export default function About() {
 
   const contactItems = [
     { icon: <MapPin size={16} />, label: 'CAMPUS ADDRESS', value: 'Suriyampalayam, Vasavi College PO, Erode, Tamil Nadu — 638 316' },
-    { icon: <Phone size={16} />,  label: 'DEPARTMENT CONTACT', value: '+91 90000 00000' },
+    { icon: <Mail size={16} />,  label: 'DEPARTMENT CONTACT', value: 'civiladagegce@gmail.com' },
     { icon: <Clock size={16} />,  label: 'SYMPOSIUM DATE', value: 'Thursday, 3 September 2026 · 9:00 AM Onwards' },
   ];
 
