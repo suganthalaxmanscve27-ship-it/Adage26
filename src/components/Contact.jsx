@@ -8,7 +8,7 @@ export default function Contact() {
   };
 
   const info = [
-    { icon: <Mail  size={13} />, label: 'Email',      val: 'adage26@gmail.com' },
+    { icon: <Mail  size={13} />, label: 'Email',      val: 'civiladagegce@gmail.com' },
     { icon: <Phone size={13} />, label: 'Phone',      val: '+91 81225 78554' },
     { icon: <Globe size={13} />, label: 'Social',     val: '@adage_gceerode' },
     { icon: <MapPin size={13}/>, label: 'Department', val: 'Civil Block, GCE Erode, Suriyampalayam — 638 316' },

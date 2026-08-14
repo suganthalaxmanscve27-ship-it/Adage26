@@ -165,7 +165,7 @@ export default function Verify() {
         )}
 
         <p className="text-center text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-widest mt-8 sm:mt-10">
-          Manual verification · Contact adage26@gmail.com for delays &gt; 24 hours
+          Manual verification · Contact civiladagegce@gmail.com for delays &gt; 24 hours
         </p>
       </div>
     </div>
