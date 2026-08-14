@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, Mail, Clock, Target, Globe, Users, Cpu, ShieldCheck, Compass, Layers, Award, ArrowUpRight } from 'lucide-react';
+import civilDeptImg from '../assets/Civil_Dept.jpg';
 
 export default function About() {
   const stats = [
@@ -101,7 +102,7 @@ export default function About() {
                 <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none z-10" />
 
                 <img
-                  src="hero_banner.png"
+                  src={civilDeptImg}
                   alt="Civil Engineering GCE Erode Campus"
                   className="w-full h-64 sm:h-80 object-cover filter contrast-110 brightness-90 group-hover:scale-105 transition-transform duration-700"
                 />
