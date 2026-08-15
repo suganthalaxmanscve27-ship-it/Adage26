@@ -107,9 +107,12 @@ export default function Dashboard() {
   const [live, setLive]     = useState(false);
   const navigate = useNavigate();
 
+  const [dbEvents, setDbEvents] = useState([]);
   const email = localStorage.getItem('adage_user_email');
 
   useEffect(() => {
+    supabase.from('events').select('*').then(({ data }) => setDbEvents(data || []));
+
     if (!email) { setLoad(false); return; }
     (async () => {
       const { data } = await supabase.from('registrations').select('*').eq('email', email.toLowerCase()).order('timestamp', { ascending: false });
@@ -214,12 +217,12 @@ export default function Dashboard() {
                   </div>
 
                   {/* WhatsApp groups */}
-                  {reg.events.some(et => Sr.find(e => e.title === et)?.whatsappLink) && (
+                  {reg.events.some(et => (dbEvents.length > 0 ? dbEvents : Sr).find(e => e.title === et)?.whatsappLink) && (
                     <div className="mb-5">
                       <p className="section-label mb-3 flex items-center gap-2"><MessageSquare size={11} /> Join Event WhatsApp Groups</p>
                       <div className="space-y-1">
                         {reg.events.map(et => {
-                          const ev = Sr.find(e => e.title === et);
+                          const ev = (dbEvents.length > 0 ? dbEvents : Sr).find(e => e.title === et);
                           return ev?.whatsappLink ? (
                             <a key={et} href={ev.whatsappLink} target="_blank" rel="noopener noreferrer"
                               className="flex items-center justify-between py-2 border-b border-white/[0.04] group hover:border-[#C8922A]/20 transition-colors">

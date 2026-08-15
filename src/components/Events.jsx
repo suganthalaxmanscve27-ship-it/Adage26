@@ -1,11 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { X, Phone, ArrowRight, Loader, Zap, FileText, Download } from 'lucide-react';
+import { X, Phone, Mail, ArrowRight, Loader, Zap, FileText, Download, Image as ImageIcon } from 'lucide-react';
 import { Sr, Pt } from '../events';
 import { supabase } from '../supabase';
 
+export const getEventImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('data:image')) return url;
+  
+  // Convert any Google Drive sharing / preview / uc / open link to direct embeddable CDN URL
+  const fileIdMatch =
+    url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+    url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+    
+  if (fileIdMatch && fileIdMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
+  }
+  return url;
+};
+
+export const handleImageError = (e, originalUrl) => {
+  if (!e.target.dataset.triedThumbnail) {
+    e.target.dataset.triedThumbnail = "true";
+    const fileIdMatch =
+      originalUrl?.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+      originalUrl?.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch && fileIdMatch[1]) {
+      e.target.src = `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1200`;
+      return;
+    }
+  }
+};
+
 function EventModal({ event, onClose }) {
   if (!event) return null;
+  const resolvedImageUrl = getEventImageUrl(event.image);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -23,28 +54,48 @@ function EventModal({ event, onClose }) {
         </div>
 
         {/* Modal header */}
-        <div className="relative h-32 sm:h-40 flex-shrink-0 overflow-hidden bg-[#0A0D14]">
-          <img
-            src={event.image}
-            alt=""
-            className="w-full h-full object-cover opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-[#111]/60 to-transparent" />
-          <div className="absolute bottom-4 sm:bottom-5 left-4 sm:left-6 right-12">
-            <span className="text-[#C8922A] text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.4em]">{event.category}</span>
-            <h3 className="font-cinzel font-black text-lg sm:text-xl md:text-2xl text-[#EDEBE6] uppercase tracking-widest mt-1">{event.title}</h3>
-            {event.slogan && <p className="text-gray-400 text-[9px] sm:text-[10px] italic mt-1">"{event.slogan}"</p>}
+        <div className="relative min-h-[180px] sm:h-60 flex-shrink-0 overflow-hidden bg-[#0A0D14]">
+          {resolvedImageUrl ? (
+            <img
+              src={resolvedImageUrl}
+              alt={event.title}
+              onError={(e) => handleImageError(e, event.image)}
+              className="w-full h-full object-cover object-top opacity-50 sm:opacity-60 transition-opacity"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center opacity-10">
+              <ImageIcon size={64} className="text-[#C8922A]" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-[#111]/50 to-transparent" />
+          <div className="absolute bottom-4 sm:bottom-5 left-4 sm:left-6 right-12 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <span className="text-[#C8922A] text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.4em]">{event.category}</span>
+              <h3 className="font-cinzel font-black text-lg sm:text-xl md:text-2xl text-[#EDEBE6] uppercase tracking-widest mt-1">{event.title}</h3>
+              {event.slogan && <p className="text-gray-400 text-[9px] sm:text-[10px] italic mt-1">"{event.slogan}"</p>}
+            </div>
+
+            {/* Rule Book PDF Link to the right of event name */}
+            <a
+              href="./ADAGE 26 Rule Book.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#090909]/95 border border-[#C8922A]/60 hover:border-[#C8922A] text-[#C8922A] hover:text-[#EDEBE6] font-cad text-xs tracking-wider uppercase transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(200,146,42,0.25)] rounded-sm group flex-shrink-0 self-start sm:self-auto"
+            >
+              <FileText size={14} className="group-hover:scale-110 transition-transform" />
+              <span>RULE BOOK (PDF)</span>
+              <Download size={12} className="opacity-70 group-hover:opacity-100" />
+            </a>
           </div>
         </div>
 
         {/* Scrollable content */}
         <div className="flex-grow overflow-y-auto px-4 sm:px-6 py-5 sm:py-6 space-y-6 sm:space-y-8 custom-scrollbar">
           {/* Quick info */}
-          <div className="grid grid-cols-3 gap-px bg-white/[0.04]">
+          <div className="grid grid-cols-2 gap-px bg-white/[0.04]">
             {[
               { label: 'Fee',     val: `₹${event.fee} / head` },
               { label: 'Team',    val: `Max ${event.maxMembers}` },
-              { label: 'Prize',   val: event.prize },
             ].map((item, i) => (
               <div key={i} className="bg-[#111] px-3 sm:px-4 py-3 sm:py-4">
                 <p className="section-label mb-1 text-[8px] sm:text-[10px]">{item.label}</p>
@@ -96,19 +147,48 @@ function EventModal({ event, onClose }) {
             <div>
               <h4 className="text-[#C8922A] text-[9px] font-bold uppercase tracking-[0.3em] mb-3 sm:mb-4 accent-bar">Coordinators</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                {event.coordinators.map((c, i) => (
-                  <div key={i} className="border border-white/[0.06] px-3 sm:px-4 py-3 flex items-center justify-between hover:border-[#C8922A]/20 transition-colors">
-                    <div>
-                      <p className="text-[#EDEBE6] text-xs font-semibold">{c.name}</p>
-                      <p className="text-gray-400 text-[10px] font-mono mt-0.5">{c.phone}</p>
+                {event.coordinators.map((c, i) => {
+                  const emailToDisplay = c.email && c.email.trim() !== "" ? c.email.trim() : "";
+                  return (
+                    <div key={i} className="border border-white/[0.06] px-3 sm:px-4 py-3 flex items-center justify-between hover:border-[#C8922A]/20 transition-colors bg-white/[0.01]">
+                      <div className="min-w-0 pr-2 space-y-1">
+                        <p className="text-[#EDEBE6] text-xs font-semibold truncate">{c.name}</p>
+                        {c.phone && (
+                          <a href={`tel:${c.phone}`} className="text-gray-400 hover:text-white text-[10px] font-mono flex items-center gap-1.5 transition-colors">
+                            <Phone size={10} className="text-[#C8922A] flex-shrink-0" />
+                            <span>{c.phone}</span>
+                          </a>
+                        )}
+                        {emailToDisplay && (
+                          <a href={`mailto:${emailToDisplay}`} className="text-gray-400 hover:text-[#C8922A] text-[10px] font-mono flex items-center gap-1.5 truncate transition-colors">
+                            <Mail size={10} className="text-[#C8922A] flex-shrink-0" />
+                            <span className="truncate">{emailToDisplay}</span>
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {emailToDisplay && (
+                          <a
+                            href={`mailto:${emailToDisplay}`}
+                            title={`Email ${c.name || 'Coordinator'}`}
+                            className="text-[#C8922A] hover:text-[#EDEBE6] hover:bg-white/5 rounded transition-colors p-1.5"
+                          >
+                            <Mail size={14} />
+                          </a>
+                        )}
+                        {c.phone && (
+                          <a
+                            href={`tel:${c.phone}`}
+                            title={`Call ${c.name || 'Coordinator'}`}
+                            className="text-[#C8922A] hover:text-[#EDEBE6] hover:bg-white/5 rounded transition-colors p-1.5"
+                          >
+                            <Phone size={14} />
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    {c.phone && (
-                      <a href={`tel:${c.phone}`} className="text-[#C8922A] hover:text-[#EDEBE6] transition-colors ml-3 p-2">
-                        <Phone size={14} />
-                      </a>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -134,18 +214,30 @@ export default function Events() {
   const [isLoading, setIsLoading]     = useState(true);
   const [selectedEvent, setSelected]  = useState(null);
 
+  const sortEventsTechFirst = (list) => {
+    return [...list].sort((a, b) => {
+      const aIsTech = a.category === Pt.TECHNICAL || a.category === 'Technical';
+      const bIsTech = b.category === Pt.TECHNICAL || b.category === 'Technical';
+      if (aIsTech && !bIsTech) return -1;
+      if (!aIsTech && bIsTech) return 1;
+      return 0;
+    });
+  };
+
   useEffect(() => {
     (async () => {
       try {
         const { data } = await supabase.from('events').select('*');
-        setEvents(data?.length ? data : Sr);
-      } catch { setEvents(Sr); }
+        const list = data?.length ? data : Sr;
+        setEvents(sortEventsTechFirst(list));
+      } catch { setEvents(sortEventsTechFirst(Sr)); }
       finally { setIsLoading(false); }
     })();
   }, []);
 
   const categories = ['All', ...Object.values(Pt)];
-  const filtered = filter === 'All' ? events : events.filter(e => e.category === filter);
+  const sortedEvents = sortEventsTechFirst(events);
+  const filtered = filter === 'All' ? sortedEvents : sortedEvents.filter(e => e.category === filter);
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -173,7 +265,7 @@ export default function Events() {
 
           {/* Rule Book PDF Link */}
           <a
-            href="./ADAGE 26 Rule Book .pdf"
+            href="./ADAGE 26 Rule Book.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#090909] border border-[#C8922A]/60 hover:border-[#C8922A] text-[#C8922A] hover:text-[#EDEBE6] font-cad text-xs tracking-wider uppercase transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(200,146,42,0.25)] rounded-sm group self-start sm:self-auto"
@@ -225,15 +317,20 @@ export default function Events() {
                   <div className="blueprint-draft-lines opacity-10 pointer-events-none" />
 
                   {/* Blueprint visual box */}
-                  <div className="relative h-36 sm:h-40 overflow-hidden mb-4 border border-white/[0.05] bg-[#0A0D14]">
-                    <img
-                      src={event.image}
-                      alt=""
-                      loading="lazy"
-                      className="w-full h-full object-cover opacity-45 group-hover:opacity-60 transition-opacity duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0D14] via-transparent to-transparent" />
-                    <span className="absolute top-2 right-2 bg-[#C8922A] text-[#0C0C0C] text-[8px] font-mono font-black tracking-widest px-2 py-0.5 border border-[#C8922A] select-none whitespace-nowrap">
+                  <div className="relative h-36 sm:h-40 overflow-hidden mb-4 border border-white/[0.05] bg-[#0A0D14] flex items-center justify-center">
+                    {event.image ? (
+                      <img
+                        src={getEventImageUrl(event.image)}
+                        alt={event.title}
+                        loading="lazy"
+                        onError={(e) => handleImageError(e, event.image)}
+                        className="w-full h-full object-cover object-top opacity-55 group-hover:opacity-75 transition-opacity duration-500"
+                      />
+                    ) : (
+                      <ImageIcon size={36} className="text-[#C8922A]/20" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0D14] via-transparent to-transparent pointer-events-none" />
+                    <span className="absolute top-2 right-2 bg-[#C8922A] text-[#0C0C0C] text-[8px] font-mono font-black tracking-widest px-2 py-0.5 border border-[#C8922A] select-none whitespace-nowrap z-10">
                       ₹{event.fee} / ENTRY
                     </span>
                   </div>

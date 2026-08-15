@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
-import { ut, Sr } from '../events';
+import { ut, Sr, Pt, calculatePricing } from '../events';
 import {
   Users, CheckCircle, Clock, AlertTriangle, Search, LogOut,
   ClipboardList, Settings, Download, Plus, X, Phone,
@@ -9,9 +9,12 @@ import {
 } from 'lucide-react';
 
 const getDriveImageUrl = (url) => {
-  if (!url) return '';
+  if (!url || typeof url !== 'string') return '';
   if (url.startsWith('data:image')) return url;
-  const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  const fileIdMatch =
+    url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+    url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
   if (fileIdMatch && fileIdMatch[1]) {
     return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
   }
@@ -19,44 +22,49 @@ const getDriveImageUrl = (url) => {
 };
 
 // Manual Entry Modal
-function ManualEntryModal({ onClose, onSave }) {
+function ManualEntryModal({ eventsList = [], onClose, onSave }) {
   const [isSaving, setIsSaving] = useState(false);
-  const [form, setForm] = useState({
+
+  // Available events (use dbEvents list or Sr fallback), sorted Tech first
+  const availableEvents = useMemo(() => {
+    const list = Array.isArray(eventsList) && eventsList.length > 0 ? eventsList : (Sr || []);
+    return [...list].sort((a, b) => {
+      const aIsTech = a?.category === Pt.TECHNICAL || a?.category === 'Technical';
+      const bIsTech = b?.category === Pt.TECHNICAL || b?.category === 'Technical';
+      if (aIsTech && !bIsTech) return -1;
+      if (!aIsTech && bIsTech) return 1;
+      return 0;
+    });
+  }, [eventsList]);
+
+  const [form, setForm] = useState(() => ({
     name: "",
     college: "",
     department: "",
     email: "",
     phone: "",
-    selectedEvents: []
-  });
+    selectedEvents: [],
+    teamMembers: [],
+    totalFee: 0,
+    isManualFeeOverride: false,
+    transactionId: `ONSPOT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+    status: ut.CONFIRMED
+  }));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      const generatedId = `MAN-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-      const payload = {
-        id: generatedId,
-        name: form.name,
-        college: form.college,
-        department: form.department,
-        email: form.email.toLowerCase(),
-        phone: form.phone,
-        teamMembers: [],
-        events: form.selectedEvents,
-        totalFee: 0,
-        transactionId: "ON-SPOT",
-        status: ut.CONFIRMED,
-        timestamp: new Date().toISOString()
-      };
-      await onSave(payload);
-      onClose();
-    } catch (err) {
-      alert("Error adding participant");
-    } finally {
-      setIsSaving(false);
+  // Calculate pricing based on selected events
+  const selectedObjects = availableEvents.filter(e => e && (form.selectedEvents.includes(e.title) || form.selectedEvents.includes(e.id)));
+  const techCount = selectedObjects.filter(e => e?.category === Pt.TECHNICAL || e?.category === 'Technical').length;
+  const nonTechCount = selectedObjects.filter(e => e?.category === Pt.NON_TECHNICAL || e?.category === 'Non-Technical').length;
+  const totalParticipants = 1 + form.teamMembers.filter(m => m && m.trim() !== "").length;
+
+  const autoPricing = calculatePricing(techCount, nonTechCount, totalParticipants);
+
+  // Keep totalFee synced with autoPricing unless admin manually overrides
+  useEffect(() => {
+    if (!form.isManualFeeOverride) {
+      setForm(prev => ({ ...prev, totalFee: autoPricing.totalPayableFee }));
     }
-  };
+  }, [techCount, nonTechCount, totalParticipants, form.isManualFeeOverride, autoPricing.totalPayableFee]);
 
   const toggleEvent = (title) => {
     setForm(prev => ({
@@ -67,90 +75,320 @@ function ManualEntryModal({ onClose, onSave }) {
     }));
   };
 
+  const handleAddMember = () => {
+    setForm(prev => ({ ...prev, teamMembers: [...prev.teamMembers, ""] }));
+  };
+
+  const handleMemberChange = (idx, value) => {
+    setForm(prev => {
+      const updated = [...prev.teamMembers];
+      updated[idx] = value;
+      return { ...prev, teamMembers: updated };
+    });
+  };
+
+  const handleRemoveMember = (idx) => {
+    setForm(prev => ({
+      ...prev,
+      teamMembers: prev.teamMembers.filter((_, i) => i !== idx)
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (form.selectedEvents.length === 0) {
+      alert("Please select at least one event.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const generatedId = `MAN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
+      let finalTxId = form.transactionId ? form.transactionId.trim() : "";
+      const genericKeywords = ["ON-SPOT", "ONSPOT", "CASH", "SPOT", "DESK", "ADMIN", "MANUAL", "OFFLINE"];
+      if (!finalTxId || genericKeywords.includes(finalTxId.toUpperCase())) {
+        const prefix = (finalTxId.toUpperCase().replace(/[^A-Z]/g, "") || "ONSPOT");
+        finalTxId = `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      }
+
+      const payload = {
+        id: generatedId,
+        name: form.name,
+        college: form.college,
+        department: form.department,
+        email: form.email.toLowerCase(),
+        phone: form.phone,
+        teamMembers: form.teamMembers.filter(m => m.trim() !== ""),
+        events: form.selectedEvents,
+        totalFee: Number(form.totalFee),
+        transactionId: finalTxId,
+        status: form.status || ut.CONFIRMED,
+        timestamp: new Date().toISOString()
+      };
+      await onSave(payload);
+      onClose();
+    } catch (err) {
+      console.error("Manual entry save error:", err);
+      if (err?.message?.includes("registrations_transactionid_unique") || err?.code === "23505" || String(err).includes("unique constraint")) {
+        alert(`Error adding participant: Transaction Reference "${form.transactionId}" already exists. Please provide a unique ID or leave empty for auto-generated ON-SPOT ID.`);
+      } else {
+        alert("Error adding participant: " + (err.message || err));
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="bg-[#111111] w-full max-w-xl rounded-lg border border-gold/20 p-10 relative overflow-hidden shadow-md">
-        <button onClick={onClose} className="absolute top-8 right-8 text-gray-400 hover:text-white">
-          <X size={24} />
+      <div className="bg-[#111111] w-full max-w-2xl rounded-xl border border-[#C8922A]/30 p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+          <X size={22} />
         </button>
 
-        <h3 className="text-2xl font-cinzel font-black uppercase tracking-widest text-gold mb-8">
-          Manual Entry
-        </h3>
+        <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
+          <div className="p-2.5 bg-[#C8922A]/10 border border-[#C8922A]/30 rounded-lg text-[#C8922A]">
+            <ClipboardList size={20} />
+          </div>
+          <div>
+            <h3 className="text-xl font-cinzel font-black uppercase tracking-widest text-[#C8922A]">
+              Manual Registration Entry
+            </h3>
+            <p className="text-[10px] text-gray-400 font-mono">ON-SPOT & ADMIN ENTRY PORTAL</p>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Full Name"
-              required
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#C8922A]"
-            />
-            <input
-              type="text"
-              placeholder="College"
-              required
-              value={form.college}
-              onChange={e => setForm({ ...form, college: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#C8922A]"
-            />
-            <input
-              type="text"
-              placeholder="Dept"
-              required
-              value={form.department}
-              onChange={e => setForm({ ...form, department: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#C8922A]"
-            />
-            <input
-              type="tel"
-              placeholder="Phone"
-              required
-              value={form.phone}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#C8922A]"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              required
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              className="col-span-2 bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#C8922A]"
-            />
+          {/* Section 1: Participant Info */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+              <Users size={14} className="text-[#C8922A]" /> 01. Participant Profile
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rahul Kumar"
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase">College Institution *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. GCE Erode"
+                  value={form.college}
+                  onChange={e => setForm({ ...form, college: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Department *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Civil Engineering"
+                  value={form.department}
+                  onChange={e => setForm({ ...form, department: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Phone Number *</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="10-digit mobile number"
+                  value={form.phone}
+                  onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                />
+              </div>
+
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="participant@domain.com"
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-              Select Events
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {Sr.map(event => (
-                <button
-                  type="button"
-                  key={event.id}
-                  onClick={() => toggleEvent(event.title)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
-                    form.selectedEvents.includes(event.title)
-                      ? "bg-gold border-gold text-black"
-                      : "border-white/10 text-gray-400 hover:border-gold/50"
-                  }`}
+          {/* Section 2: Team Members (Optional) */}
+          <div className="space-y-3 pt-2 border-t border-white/5">
+            <div className="flex justify-between items-center">
+              <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                <Users size={14} className="text-[#C8922A]" /> 02. Team Roster (Optional)
+              </h4>
+              <button
+                type="button"
+                onClick={handleAddMember}
+                className="text-[#C8922A] hover:text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 bg-[#C8922A]/10 px-2.5 py-1 rounded border border-[#C8922A]/30"
+              >
+                <Plus size={12} /> Add Member
+              </button>
+            </div>
+            {form.teamMembers.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {form.teamMembers.map((m, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder={`Team Member ${idx + 2} Name`}
+                      value={m}
+                      onChange={e => handleMemberChange(idx, e.target.value)}
+                      className="flex-grow bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(idx)}
+                      className="text-red-400 hover:text-red-300 p-1.5 bg-red-500/10 rounded border border-red-500/20"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Event Selection */}
+          <div className="space-y-3 pt-2 border-t border-white/5">
+            <div className="flex justify-between items-center">
+              <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                03. Select Competitions ({form.selectedEvents.length} Selected) *
+              </h4>
+              <span className="text-[9px] font-mono text-gray-400 uppercase">
+                Tech: {techCount} | Non-Tech: {nonTechCount}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+              {availableEvents.map(event => {
+                const isSelected = form.selectedEvents.includes(event.title) || form.selectedEvents.includes(event.id);
+                const isTech = event.category === Pt.TECHNICAL || event.category === 'Technical';
+
+                return (
+                  <div
+                    key={event.id || event.title}
+                    onClick={() => toggleEvent(event.title)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
+                      isSelected
+                        ? "bg-[#C8922A]/15 border-[#C8922A] text-white shadow-sm"
+                        : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-white"
+                    }`}
+                  >
+                    <div className="min-w-0 pr-2">
+                      <p className="text-xs font-bold uppercase truncate">{event.title}</p>
+                      <span className={`text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border inline-block mt-1 ${
+                        isTech ? "border-amber-500/30 text-amber-400 bg-amber-500/10" : "border-cyan-500/30 text-cyan-400 bg-cyan-500/10"
+                      }`}>
+                        {event.category}
+                      </span>
+                    </div>
+
+                    <div className={`w-5 h-5 rounded flex items-center justify-center border text-xs flex-shrink-0 ${
+                      isSelected ? "bg-[#C8922A] border-[#C8922A] text-black" : "border-white/20"
+                    }`}>
+                      {isSelected && <CheckCircle size={12} strokeWidth={3} />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 4: Payment Details & Total Fee */}
+          <div className="space-y-4 pt-2 border-t border-white/5 bg-black/40 p-4 rounded-xl border border-white/10">
+            <h4 className="text-xs font-bold text-[#C8922A] uppercase tracking-wider flex items-center gap-2">
+              <ShieldCheck size={14} /> 04. Payment & Amount Received
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase">
+                  Payment Status
+                </label>
+                <select
+                  value={form.status}
+                  onChange={e => setForm({ ...form, status: e.target.value })}
+                  className="w-full bg-[#111] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[#C8922A]"
                 >
-                  {event.title}
-                </button>
-              ))}
+                  <option value={ut.CONFIRMED}>Confirmed (Paid)</option>
+                  <option value={ut.PRESENT}>Checked In (On-Spot)</option>
+                  <option value={ut.PENDING}>Payment Pending Verification</option>
+                  <option value={ut.REVIEW}>Under Review</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase">
+                  Transaction / Ref ID / Mode
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ON-SPOT, CASH, or UTR"
+                  value={form.transactionId}
+                  onChange={e => setForm({ ...form, transactionId: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[#C8922A] font-mono uppercase"
+                />
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">
+                    Total Amount Received (₹) *
+                  </label>
+                  {autoPricing.discount > 0 && (
+                    <span className="text-[9px] text-emerald-400 font-bold">
+                      Bundle Discount: -₹{autoPricing.discount * autoPricing.totalParticipants} Applied
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    value={form.totalFee}
+                    onChange={e => setForm({ ...form, totalFee: Number(e.target.value), isManualFeeOverride: true })}
+                    className="flex-grow bg-white/5 border border-white/10 rounded-lg p-3 text-sm font-bold text-[#C8922A] focus:outline-none focus:border-[#C8922A]"
+                  />
+                  {form.isManualFeeOverride && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, totalFee: autoPricing.totalPayableFee, isManualFeeOverride: false })}
+                      className="text-[10px] text-gray-400 hover:text-white underline whitespace-nowrap"
+                    >
+                      Reset to Auto Rate (₹{autoPricing.totalPayableFee})
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full bg-gold text-black py-4 rounded-xl font-black uppercase tracking-widest hover:bg-[#B07A20] glow-gold flex items-center justify-center gap-2"
+            className="w-full bg-[#C8922A] text-black py-4 rounded-xl font-black uppercase tracking-widest hover:bg-[#B07A20] transition-all glow-gold flex items-center justify-center gap-2"
           >
-            {isSaving ? <Loader className="animate-spin" /> : <Plus size={20} />}
-            Register Participant
+            {isSaving ? <Loader className="animate-spin" /> : <Plus size={18} />}
+            Submit Registration
           </button>
         </form>
       </div>
@@ -211,7 +449,7 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
   };
 
   const handleAddCoordinator = () => {
-    setForm(prev => ({ ...prev, coordinators: [...prev.coordinators, { name: "", phone: "" }] }));
+    setForm(prev => ({ ...prev, coordinators: [...prev.coordinators, { name: "", phone: "", email: "" }] }));
   };
 
   const handleCoordinatorChange = (index, field, value) => {
@@ -233,46 +471,54 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
           <X size={24} />
         </button>
 
-        <h3 className="text-xl font-cinzel font-black uppercase tracking-widest text-gold mb-6 border-b border-white/5 pb-2">
-          {isNew ? "Create New Event" : `Edit Event: ${form.title}`}
-        </h3>
+        <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+          <div className="p-2 bg-gold/10 rounded-lg text-gold">
+            <Settings size={20} />
+          </div>
+          <div>
+            <h3 className="text-xl font-cinzel font-black uppercase tracking-widest text-gold">
+              {isNew ? "Create New Event" : `Edit Event: ${event?.title}`}
+            </h3>
+            <p className="text-[10px] text-gray-400 font-mono">SUPABASE DYNAMIC EVENT CONFIG</p>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Main Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* ID (URL Slug) & Title - Edit only on Creation */}
-            <div className="space-y-2">
-              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Event ID / Code (Unique Slug)</label>
-              <input
-                type="text"
-                required
-                disabled={!isNew}
-                value={form.id}
-                onChange={e => setForm({ ...form, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
-                placeholder="e.g. brick-builder"
-                className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A] disabled:opacity-40"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Event Title</label>
-              <input
-                type="text"
-                required
-                disabled={!isNew}
-                value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })}
-                placeholder="e.g. BRICK BUILDER"
-                className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A] disabled:opacity-40"
-              />
-            </div>
+            {isNew && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Event Slug / ID *</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.id}
+                    onChange={e => setForm({ ...form, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                    placeholder="e.g. paper-presentation"
+                    className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A] font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Event Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.title}
+                    onChange={e => setForm({ ...form, title: e.target.value })}
+                    placeholder="e.g. Paper Presentation"
+                    className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Category</label>
               <select
                 value={form.category}
                 onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full bg-[#111] border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
+                className="w-full bg-[#1A1A1A] border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
               >
                 <option value="Technical">Technical</option>
                 <option value="Non-Technical">Non-Technical</option>
@@ -280,11 +526,32 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
             </div>
 
             <div className="space-y-2">
+              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Catchy Slogan</label>
+              <input
+                type="text"
+                value={form.slogan}
+                onChange={e => setForm({ ...form, slogan: e.target.value })}
+                placeholder="e.g. Innovate & Present"
+                className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Event Fee (₹) / Head</label>
+              <input
+                type="number"
+                value={form.fee}
+                onChange={e => setForm({ ...form, fee: Number(e.target.value) })}
+                className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Max Team Members</label>
               <input
                 type="number"
-                min={1}
-                max={6}
+                min="1"
+                max="10"
                 value={form.maxMembers}
                 onChange={e => setForm({ ...form, maxMembers: Number(e.target.value) })}
                 className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
@@ -292,12 +559,12 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Event Slogan</label>
+              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Prize Pool / Label</label>
               <input
                 type="text"
-                value={form.slogan}
-                onChange={e => setForm({ ...form, slogan: e.target.value })}
-                placeholder="Strength in shapes..."
+                value={form.prize}
+                onChange={e => setForm({ ...form, prize: e.target.value })}
+                placeholder="e.g. ₹5,000 + Certificate"
                 className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
               />
             </div>
@@ -308,29 +575,7 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
                 type="text"
                 value={form.timing}
                 onChange={e => setForm({ ...form, timing: e.target.value })}
-                placeholder="10:00 AM"
-                className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Registration Fee (₹)</label>
-              <input
-                type="number"
-                value={form.fee}
-                onChange={e => setForm({ ...form, fee: Number(e.target.value) })}
-                placeholder="250"
-                className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Prize Details / Pool</label>
-              <input
-                type="text"
-                value={form.prize}
-                onChange={e => setForm({ ...form, prize: e.target.value })}
-                placeholder="Certificate + Cash Prize"
+                placeholder="e.g. 10:00 AM - 01:00 PM"
                 className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
               />
             </div>
@@ -347,13 +592,30 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
             </div>
 
             <div className="col-span-1 md:col-span-2 space-y-2">
-              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Image Banner URL</label>
+              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Image Banner URL (Google Drive Link or Image URL)</label>
               <input
                 type="text"
                 value={form.image}
                 onChange={e => setForm({ ...form, image: e.target.value })}
+                placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
                 className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white focus:outline-none focus:border-[#C8922A]"
               />
+              {form.image && (
+                <div className="mt-2 h-24 rounded border border-white/10 overflow-hidden relative bg-black/40 flex items-center justify-center">
+                  <img
+                    src={getDriveImageUrl(form.image)}
+                    alt="Banner Preview"
+                    className="max-h-full max-w-full object-contain"
+                    onError={(e) => {
+                      const fileIdMatch = form.image?.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || form.image?.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                      if (fileIdMatch && fileIdMatch[1] && !e.target.dataset.triedThumbnail) {
+                        e.target.dataset.triedThumbnail = "true";
+                        e.target.src = `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w800`;
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="col-span-1 md:col-span-2 space-y-2">
@@ -403,22 +665,29 @@ function EditEventModal({ event, isNew = false, onClose, onSave }) {
             </div>
             <div className="space-y-2">
               {form.coordinators.map((c, idx) => (
-                <div key={idx} className="grid grid-cols-5 gap-2 items-center">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-7 gap-2 items-center bg-white/[0.02] p-2 rounded border border-white/5">
                   <input
                     type="text"
                     placeholder="Name"
-                    value={c.name}
+                    value={c.name || ""}
                     onChange={e => handleCoordinatorChange(idx, "name", e.target.value)}
-                    className="col-span-2 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                    className="sm:col-span-2 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-[#C8922A]"
                   />
                   <input
                     type="text"
                     placeholder="Phone"
-                    value={c.phone}
+                    value={c.phone || ""}
                     onChange={e => handleCoordinatorChange(idx, "phone", e.target.value)}
-                    className="col-span-2 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                    className="sm:col-span-2 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-[#C8922A]"
                   />
-                  <button type="button" onClick={() => handleRemoveCoordinator(idx)} className="text-red-500 hover:text-red-400 p-1 justify-self-center">
+                  <input
+                    type="email"
+                    placeholder="Email (Optional)"
+                    value={c.email || ""}
+                    onChange={e => handleCoordinatorChange(idx, "email", e.target.value)}
+                    className="sm:col-span-2 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-[#C8922A]"
+                  />
+                  <button type="button" onClick={() => handleRemoveCoordinator(idx)} className="text-red-500 hover:text-red-400 p-1 justify-self-center sm:col-span-1">
                     <X size={14} />
                   </button>
                 </div>
@@ -597,7 +866,7 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
   return (
     <div className="py-24 bg-[#0C0C0C] min-h-screen text-white font-inter">
       {isManualModalOpen && (
-        <ManualEntryModal onClose={() => setIsManualModalOpen(false)} onSave={handleManualSave} />
+        <ManualEntryModal eventsList={dbEvents} onClose={() => setIsManualModalOpen(false)} onSave={handleManualSave} />
       )}
 
       {editingEvent && (

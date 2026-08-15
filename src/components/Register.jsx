@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Info, Users, Smartphone, ShieldCheck, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X } from 'lucide-react';
 import { supabase } from '../supabase';
-import { Sr, Pt, ut } from '../events';
+import { Sr, Pt, ut, calculatePricing } from '../events';
 import { uploadScreenshotToGoogleDrive } from '../utils/googleDrive';
 
 export default function Register() {
@@ -25,7 +25,14 @@ export default function Register() {
     loadEvents();
   }, []);
 
-  const activeEvents = dbEvents.length > 0 ? dbEvents : Sr;
+  const rawActiveEvents = dbEvents.length > 0 ? dbEvents : Sr;
+  const activeEvents = [...rawActiveEvents].sort((a, b) => {
+    const aIsTech = a.category === Pt.TECHNICAL || a.category === 'Technical';
+    const bIsTech = b.category === Pt.TECHNICAL || b.category === 'Technical';
+    if (aIsTech && !bIsTech) return -1;
+    if (!aIsTech && bIsTech) return 1;
+    return 0;
+  });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -110,17 +117,9 @@ export default function Register() {
   const validTeamCount = form.teamMembers.filter(name => name.trim() !== "").length;
   const totalParticipants = 1 + validTeamCount;
   
-  // Fee Calculation:
-  // - Max 2 Technical events allowed
-  // - For each Technical event, 1 Non-Technical event is FREE
-  const freeNonTechCount = Math.min(nonTechCount, techCount);
-  const paidNonTechCount = Math.max(0, nonTechCount - freeNonTechCount);
-
-  const baseRate = hasTechSelected
-    ? (techCount * techBaseFee) + (paidNonTechCount * nonTechBaseFee)
-    : (nonTechCount > 0 ? nonTechCount * nonTechBaseFee : 0);
-
-  const totalPayableFee = totalParticipants * baseRate;
+  // Reusable Fee Calculation:
+  const pricingDetails = calculatePricing(techCount, nonTechCount, totalParticipants);
+  const { normalTotal, bundleCount, discount: discountPerHead, baseRate, totalPayableFee } = pricingDetails;
 
   // Set selected event from query params
   useEffect(() => {
@@ -190,12 +189,14 @@ export default function Register() {
       } else {
         const currentSelectedList = activeEvents.filter(e => events.includes(e.id));
         const currentTechCount = currentSelectedList.filter(e => e.category === Pt.TECHNICAL).length;
+        const currentNonTechCount = currentSelectedList.filter(e => e.category === Pt.NON_TECHNICAL).length;
 
         // Rule 1: Max 2 technical events allowed
         if (targetEvent.category === Pt.TECHNICAL && currentTechCount >= 2) {
           return prev;
         }
 
+        // Non-Technical events have no limit (participants can select as many as they want)
         events.push(id);
       }
 
@@ -264,6 +265,8 @@ export default function Register() {
         }
       }
 
+      const finalPricing = calculatePricing(techCount, nonTechCount, totalParticipants);
+
       const payload = {
         id: generatedId,
         name: form.name,
@@ -276,7 +279,7 @@ export default function Register() {
           const matched = activeEvents.find(e => e.id === id);
           return matched ? matched.title : "";
         }),
-        totalFee: totalPayableFee,
+        totalFee: finalPricing.totalPayableFee,
         transactionId: form.transactionId,
         screenshotUrl: finalScreenshotUrl || null,
         status: ut.PENDING,
@@ -284,7 +287,12 @@ export default function Register() {
       };
 
       const { error: dbError } = await supabase.from('registrations').insert([payload]);
-      if (dbError) throw dbError;
+      if (dbError) {
+        if (dbError.message?.includes("registrations_transactionid_unique") || dbError.code === "23505") {
+          throw new Error("This 12-digit Transaction ID (UTR) has already been registered in our system. Please check your transaction details.");
+        }
+        throw dbError;
+      }
 
       setCreatedRecord(payload);
       localStorage.setItem('adage_user_email', payload.email);
@@ -408,15 +416,25 @@ export default function Register() {
                     <Sparkles className="text-[#C8922A] flex-shrink-0" size={20} />
                     <div>
                       <p className="text-xs font-bold text-[#C8922A] font-cad uppercase tracking-wider">
-                        BUNDLE OFFER: {techCount} FREE NON-TECHNICAL EVENT{techCount > 1 ? 'S' : ''}
+                        {discountPerHead > 0
+                          ? `BUNDLE OFFER APPLIED: ₹${discountPerHead} DISCOUNT / PARTICIPANT (${bundleCount} BUNDLE${bundleCount > 1 ? 'S' : ''})`
+                          : `TECH + NON-TECH BUNDLE OFFER AVAILABLE`}
                       </p>
                       <p className="text-[10px] text-gray-400 font-cad">
-                        You selected {techCount} Technical Event{techCount > 1 ? 's' : ''} (Max 2). For each Technical event, 1 Non-Technical event is complimentary!
+                        {discountPerHead > 0
+                          ? bundleCount === 2
+                            ? `Awesome! 2 Tech events paired with Non-Tech events: ₹200 bundle discount applied (2 Non-Tech events @ ₹50 each, any additional @ ₹150)!`
+                            : techCount >= 2 && nonTechCount < 2
+                            ? `1 Bundle applied (Saved ₹100). You have 2 Tech events selected—you can pick another Non-Tech event for just ₹50!`
+                            : `1 Bundle applied (Saved ₹100). 1 Non-Tech event is ₹50 (additional Non-Tech events are standard ₹150). Add 1 more Technical event to unlock your 2nd Non-Tech bundle for ₹50!`
+                          : techCount >= 2
+                          ? `Select Non-Technical events—your first 2 Non-Tech events will be just ₹50 each (saving up to ₹200)!`
+                          : `Select Non-Technical events—your 1st Non-Tech event is just ₹50 instead of ₹150 (saving ₹100)!`}
                       </p>
                     </div>
                   </div>
                   <span className="px-2.5 py-1 bg-[#C8922A] text-black text-[9px] font-black uppercase font-cad tracking-widest flex-shrink-0">
-                    APPLIED
+                    {discountPerHead > 0 ? `-₹${discountPerHead} APPLIED` : 'SPECIAL OFFER'}
                   </span>
                 </div>
               )}
@@ -428,18 +446,18 @@ export default function Register() {
                   const isTech = event.category === Pt.TECHNICAL;
                   const isNonTech = event.category === Pt.NON_TECHNICAL;
 
-                  const isLockedTech = isTech && !isSelected && techCount >= 2;
+                  const isLocked = isTech && !isSelected && techCount >= 2;
 
-                  let isFreeNonTech = false;
-                  if (isNonTech) {
+                  let isBundleDiscounted = false;
+                  if (isNonTech && hasTechSelected) {
                     if (isSelected) {
                       const selectedNonTechIndex = nonTechSelectedList.findIndex(e => e.id === event.id);
                       if (selectedNonTechIndex >= 0 && selectedNonTechIndex < techCount) {
-                        isFreeNonTech = true;
+                        isBundleDiscounted = true;
                       }
                     } else {
-                      if (hasTechSelected && nonTechCount < techCount) {
-                        isFreeNonTech = true;
+                      if (nonTechCount < techCount) {
+                        isBundleDiscounted = true;
                       }
                     }
                   }
@@ -447,9 +465,9 @@ export default function Register() {
                   return (
                     <div
                       key={event.id}
-                      onClick={() => !isLockedTech && toggleEventSelection(event.id)}
+                      onClick={() => !isLocked && toggleEventSelection(event.id)}
                       className={`p-5 border transition-all duration-300 relative group ${
-                        isLockedTech
+                        isLocked
                           ? "opacity-40 grayscale cursor-not-allowed bg-black/40 border-white/5"
                           : "cursor-pointer"
                       } ${
@@ -466,7 +484,7 @@ export default function Register() {
                             }`}>
                               {event.category}
                             </span>
-                            {isLockedTech && (
+                            {isLocked && (
                               <span className="text-[8px] font-cad text-rose-400 font-bold tracking-widest uppercase">
                                 [MAX 2 TECH]
                               </span>
@@ -493,8 +511,10 @@ export default function Register() {
                           <Users size={12} /> Max: {event.maxMembers} Member{event.maxMembers > 1 ? 's' : ''}
                         </span>
                         <span className="font-bold text-[#C8922A] text-xs">
-                          {isFreeNonTech ? (
-                            <span className="text-emerald-400 font-black">FREE (BUNDLE)</span>
+                          {isBundleDiscounted ? (
+                            <span className="text-emerald-400 font-black flex items-center gap-1">
+                              <span className="line-through text-gray-500 text-[10px]">₹150</span> ₹50 (BUNDLE)
+                            </span>
                           ) : (
                             `₹${event.fee || (isTech ? techBaseFee : nonTechBaseFee)}`
                           )}
@@ -511,6 +531,9 @@ export default function Register() {
                   <span className="text-[10px] text-gray-500 font-cad uppercase tracking-widest">CALCULATED RATE</span>
                   <p className="text-xs text-[#EDEBE6] font-cad">
                     Selected Events: <strong className="text-[#C8922A]">{form.selectedEvents.length}</strong>
+                    {discountPerHead > 0 && (
+                      <span className="text-emerald-400 font-bold ml-2">(Bundle Savings: -₹{discountPerHead}/head)</span>
+                    )}
                   </p>
                 </div>
                 <div className="text-right">
