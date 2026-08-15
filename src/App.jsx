@@ -13,6 +13,7 @@ import Login from './components/Login';
 import AdminHub from './components/AdminHub';
 import Dashboard from './components/Dashboard';
 import Footer from './components/Footer';
+import { sendPaymentStatusEmail } from './utils/brevo';
 
 function ProtectedRoute({ children, isAuthenticated }) {
   const isLogged = isAuthenticated || localStorage.getItem('adage_admin_logged') === 'true';
@@ -181,7 +182,25 @@ export default function App() {
     try {
       const { error } = await supabase.from('registrations').update({ status: newStatus }).eq('id', id);
       if (error) throw error;
+      
+      const targetReg = registrations.find(i => i.id === id);
       setRegistrations(p => p.map(i => i.id === id ? { ...i, status: newStatus } : i));
+
+      // If status is Confirmed or Rejected, automatically dispatch notification email via Brevo
+      const norm = String(newStatus).toUpperCase();
+      if (targetReg && (norm.includes('CONFIRM') || norm.includes('REJECT'))) {
+        sendPaymentStatusEmail({ ...targetReg, status: newStatus }, newStatus)
+          .then(res => {
+            if (res.success) {
+              console.log(`Brevo status update email dispatched to ${targetReg.email}. Message ID: ${res.messageId}`);
+            } else {
+              console.warn(`Brevo status email notice:`, res.error);
+            }
+          })
+          .catch(err => {
+            console.error("Error sending Brevo status email:", err);
+          });
+      }
     } catch (err) {
       alert('Failed to update status: ' + err.message);
     }

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Check, Info, Users, Smartphone, ShieldCheck, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X } from 'lucide-react';
+import { Check, Info, Users, Smartphone, ShieldCheck, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X, Mail, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../supabase';
 import { Sr, Pt, ut, calculatePricing } from '../events';
 import { uploadScreenshotToGoogleDrive } from '../utils/googleDrive';
+import { sendRegistrationSuccessEmail } from '../utils/brevo';
 
 export default function Register() {
   const [dbEvents, setDbEvents] = React.useState([]);
@@ -41,6 +42,7 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [createdRecord, setCreatedRecord] = useState(null);
+  const [emailDeliveryStatus, setEmailDeliveryStatus] = useState("idle"); // 'idle' | 'sending' | 'sent' | 'failed'
 
   const [screenshotFile, setScreenshotFile] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
@@ -323,6 +325,22 @@ export default function Register() {
       localStorage.setItem('adage_user_email', payload.email);
       setStep(5);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Automatically send confirmation email with details via Brevo
+      setEmailDeliveryStatus("sending");
+      sendRegistrationSuccessEmail(payload)
+        .then((res) => {
+          if (res.success) {
+            setEmailDeliveryStatus("sent");
+          } else {
+            console.warn("Brevo email send returned notice:", res.error);
+            setEmailDeliveryStatus("failed");
+          }
+        })
+        .catch((err) => {
+          console.error("Brevo email dispatch failed:", err);
+          setEmailDeliveryStatus("failed");
+        });
     } catch (err) {
       console.error("Submission failed:", err);
       setError({
@@ -1142,7 +1160,7 @@ export default function Register() {
 
           {/* STEP 5: REGISTRATION SUCCESS & ENTRY PASS */}
           {step === 5 && createdRecord && (
-            <div className="p-6 sm:p-10 md:p-12 text-center animate-fade-in space-y-8">
+            <div className="p-6 sm:p-10 md:p-12 text-center animate-fade-in space-y-6 sm:space-y-8">
               <div className="w-16 h-16 bg-[#C8922A]/20 border border-[#C8922A] text-[#C8922A] flex items-center justify-center mx-auto glow-gold">
                 <Check size={32} strokeWidth={3} />
               </div>
@@ -1152,16 +1170,78 @@ export default function Register() {
                   REGISTRATION COMPLETED
                 </span>
                 <h2 className="font-cinzel font-black text-2xl sm:text-4xl text-[#EDEBE6] uppercase tracking-wide mt-1 mb-2">
-                  REGISTRATION COMPLETED
+                  REGISTRATION SUCCESSFUL
                 </h2>
-                <p className="text-xs text-gray-400 font-cad max-w-md mx-auto">
-                  Transaction logged under Ref: <span className="text-[#C8922A] font-bold">{createdRecord.transactionId}</span>. Status: <strong className="text-amber-400">Verification Pending</strong>.
+                <p className="text-xs sm:text-sm text-gray-400 font-cad max-w-lg mx-auto">
+                  Registration Ref: <span className="text-[#C8922A] font-bold font-mono tracking-wider">{createdRecord.id}</span> • UTR: <span className="text-[#C8922A] font-bold font-mono">{createdRecord.transactionId}</span>
                 </p>
+              </div>
+
+              {/* Payment Review Notice Card */}
+              <div className="max-w-lg mx-auto bg-[#0A0A0A] border border-[#C8922A]/30 p-5 text-left relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#C8922A]" />
+                <div className="flex items-start gap-3">
+                  <Clock className="text-[#C8922A] flex-shrink-0 mt-0.5" size={18} />
+                  <div>
+                    <h4 className="text-xs font-cad font-bold text-[#EDEBE6] uppercase tracking-wider mb-1">
+                      PAYMENT UNDER REVIEW
+                    </h4>
+                    <p className="text-xs text-gray-300 font-cad leading-relaxed">
+                      Your payment of <strong className="text-[#C8922A]">₹{createdRecord.totalFee}</strong> has been logged. Our organizing team is reviewing your transaction details and will contact you soon.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Delivery Feedback Pill */}
+              <div className="max-w-lg mx-auto">
+                {emailDeliveryStatus === "sending" && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-3 rounded text-xs font-cad flex items-center justify-center gap-2">
+                    <Loader className="animate-spin" size={14} />
+                    <span>Sending confirmation email to <strong>{createdRecord.email}</strong> via Brevo...</span>
+                  </div>
+                )}
+                {emailDeliveryStatus === "sent" && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-3 rounded text-xs font-cad flex items-center justify-center gap-2">
+                    <Mail size={14} className="text-emerald-400" />
+                    <span>Confirmation email successfully sent to <strong>{createdRecord.email}</strong>!</span>
+                  </div>
+                )}
+                {emailDeliveryStatus === "failed" && (
+                  <div className="bg-white/5 border border-white/10 text-gray-400 p-3 rounded text-xs font-cad flex items-center justify-center gap-2">
+                    <Mail size={14} className="text-[#C8922A]" />
+                    <span>Registration recorded! Check <strong>{createdRecord.email}</strong> inbox or spam for confirmation.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Registered Events Summary Card */}
+              <div className="max-w-lg mx-auto bg-[#080808] border border-white/[0.08] p-5 text-left space-y-3">
+                <span className="text-[10px] text-[#C8922A] font-cad font-bold uppercase tracking-wider block">
+                  REGISTERED COMPETITIONS
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {createdRecord.events.map((evTitle, idx) => (
+                    <div key={idx} className="bg-[#C8922A]/10 border border-[#C8922A]/30 px-3 py-1.5 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#C8922A]" />
+                      <span className="text-xs font-cad font-bold text-[#EDEBE6]">{evTitle}</span>
+                    </div>
+                  ))}
+                </div>
+                {createdRecord.teamMembers && createdRecord.teamMembers.length > 0 && (
+                  <div className="pt-2 border-t border-white/[0.06] text-xs font-cad text-gray-400">
+                    <span className="text-[10px] uppercase text-gray-500 block mb-1">Team Roster:</span>
+                    <span className="text-white font-medium">{form.name} (Lead)</span>
+                    {createdRecord.teamMembers.map((m, i) => (
+                      <span key={i} className="text-gray-300">, {m}</span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* WhatsApp Community Groups */}
               {form.selectedEvents.some(id => activeEvents.find(e => e.id === id)?.whatsappLink) && (
-                <div className="max-w-md mx-auto bg-[#080808] border border-white/[0.08] p-5 text-left space-y-3">
+                <div className="max-w-lg mx-auto bg-[#080808] border border-white/[0.08] p-5 text-left space-y-3">
                   <span className="text-[10px] text-[#C8922A] font-cad font-bold uppercase tracking-wider block">
                     JOIN OFFICIAL EVENT WHATSAPP GROUPS
                   </span>
@@ -1191,12 +1271,12 @@ export default function Register() {
               )}
 
               {/* Action Button */}
-              <div className="flex justify-center max-w-md mx-auto">
+              <div className="flex justify-center max-w-lg mx-auto">
                 <button
                   onClick={() => navigate("/verify")}
                   className="btn-primary justify-center py-4 text-xs tracking-widest w-full"
                 >
-                  CHECK STATUS <ArrowRight size={16} />
+                  CHECK LIVE VERIFICATION STATUS <ArrowRight size={16} />
                 </button>
               </div>
             </div>
