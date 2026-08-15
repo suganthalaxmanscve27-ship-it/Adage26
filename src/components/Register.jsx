@@ -97,7 +97,8 @@ export default function Register() {
     }
   };
 
-  const upiId = "lithikajayabal@okicici";
+  const upiId = "sukanthalax@oksbi";
+  const payeeName = "Suganth S";
   const techBaseFee = 250;
   const nonTechBaseFee = 150;
 
@@ -141,8 +142,8 @@ export default function Register() {
   // Ensure amount is strictly a valid finite positive number (no NaN, undefined, null, or string formatting)
   const numericAmount = (typeof rawFee === 'number' && !isNaN(rawFee) && isFinite(rawFee) && rawFee >= 0) ? rawFee : 0;
 
-  // Dynamic UPI payment URI: upi://pay?pa=lithikajayabal@okicici&pn=ADAGE%202026&am=<amount>&cu=INR
-  const upiPaymentUri = `upi://pay?pa=${upiId}&pn=ADAGE%202026&am=${numericAmount}&cu=INR`;
+  // Dynamic UPI payment URI: upi://pay?pa=sukanthalax@oksbi&pn=Suganth%20S&am=<amount>&cu=INR
+  const upiPaymentUri = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${numericAmount}&cu=INR`;
 
 
   const initialParamHandledRef = useRef(false);
@@ -819,7 +820,7 @@ export default function Register() {
                   </div>
 
                   <div className="bg-black/80 border border-white/[0.08] p-3 text-center space-y-1">
-                    <p className="text-[9px] text-gray-500 font-cad uppercase">UPI ID / VPA</p>
+                    <p className="text-[9px] text-gray-400 font-cad uppercase">Payee: <strong className="text-white">{payeeName}</strong></p>
                     <p className="text-xs sm:text-sm font-mono font-bold text-[#C8922A] select-all tracking-wider">
                       {upiId}
                     </p>
