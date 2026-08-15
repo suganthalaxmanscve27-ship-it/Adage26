@@ -142,27 +142,21 @@ export default function Register() {
   // Dynamic UPI payment URI: upi://pay?pa=lithikajayabal@okicici&pn=ADAGE%202026&am=<amount>&cu=INR
   const upiPaymentUri = `upi://pay?pa=${upiId}&pn=ADAGE%202026&am=${numericAmount}&cu=INR`;
 
-  // Debug logging to verify generated UPI link and event fee
-  useEffect(() => {
-    console.log("[ADAGE UPI Debug] Selected Event(s):", selectedEventsList.map(e => ({ id: e.id, title: e.title, fee: e.fee })));
-    console.log("[ADAGE UPI Debug] Single Event Raw Fee:", selectedEvent?.fee);
-    console.log("[ADAGE UPI Debug] Total Participants:", totalParticipants);
-    console.log("[ADAGE UPI Debug] Computed numericAmount:", numericAmount);
-    console.log("[ADAGE UPI Debug] Generated upiLink:", upiPaymentUri);
-  }, [selectedEventsList, selectedEvent, totalParticipants, numericAmount, upiPaymentUri]);
 
-  // Set selected event from query params
+  const initialParamHandledRef = useRef(false);
+
+  // Pre-select event from query params on initial load (without locking user from unselecting)
   useEffect(() => {
+    if (initialParamHandledRef.current) return;
     const params = new URLSearchParams(location.search);
     const eventId = params.get('eventId');
     if (eventId && activeEvents.length > 0) {
       const targetEvent = activeEvents.find(e => e.id === eventId);
       if (targetEvent) {
+        initialParamHandledRef.current = true;
         setForm(prev => {
-          let events = [...prev.selectedEvents];
-          if (!events.includes(eventId)) {
-            events = [eventId];
-          }
+          if (prev.selectedEvents.length > 0) return prev;
+          const events = [eventId];
           
           const filteredList = activeEvents.filter(e => events.includes(e.id));
           const maxCap = filteredList.some(e => e.category === Pt.TECHNICAL || e.category === 'Technical')
