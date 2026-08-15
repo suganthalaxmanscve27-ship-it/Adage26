@@ -5,21 +5,115 @@ import {
   Users, CheckCircle, Clock, AlertTriangle, Search, LogOut,
   ClipboardList, Settings, Download, Plus, X, Phone,
   Mail, Calendar, ArrowRight, ShieldCheck, Loader, RefreshCw, Edit, Save, Trash2,
-  ExternalLink, FileText, Image
+  ExternalLink, FileText, Image, Eye
 } from 'lucide-react';
+
+const extractGoogleDriveFileId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const match =
+    url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+    url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+};
 
 const getDriveImageUrl = (url) => {
   if (!url || typeof url !== 'string') return '';
   if (url.startsWith('data:image')) return url;
-  const fileIdMatch =
-    url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-    url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-    url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileIdMatch && fileIdMatch[1]) {
-    return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
+  const fileId = extractGoogleDriveFileId(url);
+  if (fileId) {
+    // High-resolution Google Drive thumbnail endpoint (universally embeddable without 403 blocks)
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`;
   }
   return url;
 };
+
+// Robust Payment Screenshot Preview Component supporting Google Drive, Supabase & Data URLs
+function PaymentScreenshotViewer({ url, participantName }) {
+  const [loadState, setLoadState] = useState('loading'); // 'loading' | 'loaded' | 'error'
+  const [useIframe, setUseIframe] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(() => getDriveImageUrl(url));
+  const fileId = extractGoogleDriveFileId(url);
+
+  useEffect(() => {
+    setLoadState('loading');
+    setUseIframe(false);
+    setCurrentSrc(getDriveImageUrl(url));
+  }, [url]);
+
+  const handleImageError = () => {
+    if (fileId && !currentSrc.includes('thumbnail')) {
+      setCurrentSrc(`https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`);
+    } else if (fileId && !useIframe) {
+      setUseIframe(true);
+      setLoadState('loaded');
+    } else {
+      setLoadState('error');
+    }
+  };
+
+  if (!url) {
+    return (
+      <div className="flex-1 w-full min-h-[300px] bg-black/40 rounded-xl border border-white/10 flex items-center justify-center text-center p-6">
+        <p className="text-xs text-gray-500 font-cad italic">
+          No payment screenshot uploaded for this registration.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 w-full min-h-[360px] sm:min-h-[420px] bg-black rounded-xl border-2 border-[#C8922A]/30 flex items-center justify-center relative overflow-hidden shadow-2xl p-2">
+      {loadState === 'loading' && !useIframe && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-10 gap-2">
+          <Loader size={24} className="animate-spin text-[#C8922A]" />
+          <span className="text-xs text-gray-400 font-mono">Loading receipt...</span>
+        </div>
+      )}
+
+      {useIframe && fileId ? (
+        <iframe
+          src={`https://drive.google.com/file/d/${fileId}/preview`}
+          title={`Payment Receipt - ${participantName || 'Participant'}`}
+          className="w-full h-full min-h-[380px] rounded border-0"
+          allow="autoplay"
+        />
+      ) : loadState === 'error' ? (
+        <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
+          <AlertTriangle size={32} className="text-amber-400" />
+          <p className="text-xs text-gray-300 font-cad">
+            Direct image preview blocked by Google Drive permissions.
+          </p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="px-4 py-2 bg-[#C8922A] text-black font-bold text-xs rounded-xl uppercase hover:bg-[#B07A20] transition-colors flex items-center gap-1.5 font-cad shadow-lg"
+          >
+            <ExternalLink size={14} /> Open in Google Drive
+          </a>
+        </div>
+      ) : (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full h-full flex items-center justify-center cursor-zoom-in"
+          title="Click to view full size image in new tab"
+        >
+          <img
+            src={currentSrc}
+            alt={`Payment Receipt - ${participantName || 'Participant'}`}
+            className="max-h-[460px] max-w-full object-contain rounded"
+            onLoad={() => setLoadState('loaded')}
+            onError={handleImageError}
+          />
+        </a>
+      )}
+    </div>
+  );
+}
 
 // Manual Entry Modal
 function ManualEntryModal({ eventsList = [], onClose, onSave }) {
@@ -1437,30 +1531,10 @@ export default function AdminHub({ registrations, onUpdateStatus, onRefresh, fet
                     <span className="text-[10px] text-gray-400 uppercase tracking-widest block font-cad">
                       Uploaded Screenshot Preview
                     </span>
-                    {selectedParticipant.screenshotUrl ? (
-                      <a
-                        href={selectedParticipant.screenshotUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-1 w-full min-h-[360px] sm:min-h-[420px] bg-black rounded-xl border-2 border-[#C8922A]/30 p-2 flex items-center justify-center relative overflow-hidden shadow-2xl block"
-                      >
-                        <img
-                          src={getDriveImageUrl(selectedParticipant.screenshotUrl)}
-                          alt="UPI Payment Receipt"
-                          className="max-h-full max-w-full object-contain rounded"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                      </a>
-                    ) : (
-                      <div className="flex-1 w-full min-h-[200px] bg-black/40 rounded-xl border border-white/10 flex items-center justify-center text-center p-6">
-                        <p className="text-xs text-gray-500 font-cad italic">
-                          No payment screenshot uploaded for this registration.
-                        </p>
-                      </div>
-                    )}
+                    <PaymentScreenshotViewer
+                      url={selectedParticipant.screenshotUrl}
+                      participantName={selectedParticipant.name}
+                    />
                   </div>
                 </div>
               </div>
