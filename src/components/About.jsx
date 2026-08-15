@@ -5,9 +5,9 @@ import civilDeptImg from '../assets/Civil_Dept.jpg';
 export default function About() {
   const stats = [
     { num: '1984', label: 'ESTABLISHED YEAR', spec: 'FOUNDATION' },
-    { num: '15+',  label: 'FACULTY EXPERTS', spec: 'PROFESSORS' },
-    { num: '200+',label: 'ALUMNI NETWORK', spec: 'ENGINEERS' },
-    { num: '8+',  label: 'ADVANCED LABS', spec: 'FACILITIES' },
+    { num: '15+', label: 'FACULTY EXPERTS', spec: 'PROFESSORS' },
+    { num: '200+', label: 'ALUMNI NETWORK', spec: 'ENGINEERS' },
+    { num: '8+', label: 'ADVANCED LABS', spec: 'FACILITIES' },
   ];
 
   const values = [
@@ -43,8 +43,8 @@ export default function About() {
 
   const contactItems = [
     { icon: <MapPin size={16} />, label: 'CAMPUS ADDRESS', value: 'Suriyampalayam, Vasavi College PO, Erode, Tamil Nadu — 638 316' },
-    { icon: <Mail size={16} />,  label: 'DEPARTMENT CONTACT', value: 'civiladagegce@gmail.com' },
-    { icon: <Clock size={16} />,  label: 'SYMPOSIUM DATE', value: 'Thursday, 3 September 2026 · 9:00 AM Onwards' },
+    { icon: <Mail size={16} />, label: 'DEPARTMENT CONTACT', value: 'civiladagegce@gmail.com' },
+    { icon: <Clock size={16} />, label: 'SYMPOSIUM DATE', value: 'Thursday, 3 September 2026 · 9:00 AM Onwards' },
   ];
 
   return (
@@ -54,7 +54,7 @@ export default function About() {
         {/* ── 1. Hero Blueprint Specification Header ──────────────────────── */}
         <section className="relative">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-14 items-center">
-            
+
             {/* Left Content Column */}
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-2">
@@ -269,10 +269,10 @@ export default function About() {
             <div className="lg:col-span-7 bg-[#090909] border border-white/[0.08] p-2 relative h-72 sm:h-96">
               <iframe
                 title="GCE Erode Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3910.3702587508753!2d77.67876877508535!3d11.45524318873722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba9680a653bb7e5%3A0xbefbe4fd0a790589!2sGovernment%20College%20of%20Engineering%2C%20Erode!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+                src="https://maps.google.com/maps?q=Government%20College%20of%20Engineering,%20Erode%20(IRTT%20/%20GCE-E)&t=&z=16&ie=UTF8&iwloc=&output=embed"
                 width="100%"
                 height="100%"
-                className="border-0 grayscale contrast-125 opacity-75 hover:opacity-100 transition-opacity"
+                className="border-0 w-full h-full rounded"
                 allowFullScreen
                 loading="lazy"
               />
