@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Info, Users, Smartphone, ShieldCheck, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../supabase';
 import { Sr, Pt, ut, calculatePricing } from '../events';
 import { uploadScreenshotToGoogleDrive } from '../utils/googleDrive';
@@ -121,33 +122,65 @@ export default function Register() {
   const pricingDetails = calculatePricing(techCount, nonTechCount, totalParticipants);
   const { normalTotal, bundleCount, discount: discountPerHead, baseRate, totalPayableFee } = pricingDetails;
 
+  // Selected event details for dynamic UPI QR generation
+  const selectedEvent = selectedEventsList[0];
+
+  // Dynamic safe numeric fee calculation based on selected event(s) and participants
+  let rawFee = 0;
+  if (selectedEventsList.length === 1 && selectedEvent?.fee !== undefined && selectedEvent?.fee !== null) {
+    const parsed = typeof selectedEvent.fee === 'number'
+      ? selectedEvent.fee
+      : parseFloat(String(selectedEvent.fee).replace(/[^0-9.]/g, ''));
+    rawFee = !isNaN(parsed) ? parsed * totalParticipants : (totalPayableFee || 0);
+  } else {
+    rawFee = typeof totalPayableFee === 'number' && !isNaN(totalPayableFee) ? totalPayableFee : 0;
+  }
+
+  // Ensure amount is strictly a valid finite positive number (no NaN, undefined, null, or string formatting)
+  const numericAmount = (typeof rawFee === 'number' && !isNaN(rawFee) && isFinite(rawFee) && rawFee >= 0) ? rawFee : 0;
+
+  // Dynamic UPI payment URI: upi://pay?pa=lithikajayabal@okicici&pn=ADAGE%202026&am=<amount>&cu=INR
+  const upiPaymentUri = `upi://pay?pa=${upiId}&pn=ADAGE%202026&am=${numericAmount}&cu=INR`;
+
+  // Debug logging to verify generated UPI link and event fee
+  useEffect(() => {
+    console.log("[ADAGE UPI Debug] Selected Event(s):", selectedEventsList.map(e => ({ id: e.id, title: e.title, fee: e.fee })));
+    console.log("[ADAGE UPI Debug] Single Event Raw Fee:", selectedEvent?.fee);
+    console.log("[ADAGE UPI Debug] Total Participants:", totalParticipants);
+    console.log("[ADAGE UPI Debug] Computed numericAmount:", numericAmount);
+    console.log("[ADAGE UPI Debug] Generated upiLink:", upiPaymentUri);
+  }, [selectedEventsList, selectedEvent, totalParticipants, numericAmount, upiPaymentUri]);
+
   // Set selected event from query params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const eventId = params.get('eventId');
-    if (eventId) {
-      setForm(prev => {
-        let events = [...prev.selectedEvents];
-        if (activeEvents.some(e => e.id === eventId) && !events.includes(eventId)) {
-          events = [eventId];
-        }
-        
-        const filteredList = activeEvents.filter(e => events.includes(e.id));
-        const maxCap = filteredList.some(e => e.category === Pt.TECHNICAL)
-          ? Math.max(...filteredList.filter(e => e.category === Pt.TECHNICAL).map(e => e.maxMembers))
-          : filteredList.length > 0
-          ? Math.max(...filteredList.map(e => e.maxMembers))
-          : 1;
+    if (eventId && activeEvents.length > 0) {
+      const targetEvent = activeEvents.find(e => e.id === eventId);
+      if (targetEvent) {
+        setForm(prev => {
+          let events = [...prev.selectedEvents];
+          if (!events.includes(eventId)) {
+            events = [eventId];
+          }
+          
+          const filteredList = activeEvents.filter(e => events.includes(e.id));
+          const maxCap = filteredList.some(e => e.category === Pt.TECHNICAL || e.category === 'Technical')
+            ? Math.max(...filteredList.filter(e => e.category === Pt.TECHNICAL || e.category === 'Technical').map(e => e.maxMembers || 1))
+            : filteredList.length > 0
+            ? Math.max(...filteredList.map(e => e.maxMembers || 1))
+            : 1;
 
-        const members = [...prev.teamMembers].slice(0, maxCap - 1);
-        while (members.length < maxCap - 1) {
-          members.push("");
-        }
+          const members = [...prev.teamMembers].slice(0, maxCap - 1);
+          while (members.length < maxCap - 1) {
+            members.push("");
+          }
 
-        return { ...prev, selectedEvents: events, teamMembers: members };
-      });
+          return { ...prev, selectedEvents: events, teamMembers: members };
+        });
+      }
     }
-  }, [location.search]);
+  }, [location.search, activeEvents]);
 
   // Validators
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -265,8 +298,6 @@ export default function Register() {
         }
       }
 
-      const finalPricing = calculatePricing(techCount, nonTechCount, totalParticipants);
-
       const payload = {
         id: generatedId,
         name: form.name,
@@ -279,7 +310,7 @@ export default function Register() {
           const matched = activeEvents.find(e => e.id === id);
           return matched ? matched.title : "";
         }),
-        totalFee: finalPricing.totalPayableFee,
+        totalFee: numericAmount,
         transactionId: form.transactionId,
         screenshotUrl: finalScreenshotUrl || null,
         status: ut.PENDING,
@@ -743,7 +774,7 @@ export default function Register() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                {/* QR Code Placeholder Container */}
+                {/* QR Code Dynamic Container */}
                 <div className="bg-[#080808] border border-white/[0.08] p-6 text-center relative group">
                   <div className="absolute -top-1 -left-1 w-3 h-3 border-t border-l border-[#C8922A]" />
                   <div className="absolute -top-1 -right-1 w-3 h-3 border-t border-r border-[#C8922A]" />
@@ -755,19 +786,44 @@ export default function Register() {
                   </span>
 
                   {/* QR Code Container */}
-                  <div className="bg-white p-3 border border-[#C8922A]/40 inline-block mb-4 shadow-xl rounded-lg overflow-hidden">
-                    <img
-                      src="/payment_qr.png"
-                      alt="UPI Payment QR Code"
-                      className="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto"
-                    />
+                  <div className="bg-white p-4 border border-[#C8922A]/40 inline-flex flex-col items-center justify-center mb-4 shadow-xl rounded-lg overflow-hidden max-w-full">
+                    <div className="p-2 bg-white rounded-md">
+                      <QRCodeSVG
+                        value={upiPaymentUri}
+                        size={220}
+                        level="M"
+                        bgColor="#FFFFFF"
+                        fgColor="#000000"
+                        includeMargin={false}
+                        style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
+                        className="w-48 h-48 sm:w-56 sm:h-56 mx-auto"
+                      />
+                    </div>
+                    <div className="mt-3 pt-2.5 border-t border-gray-200 w-full text-center">
+                      <p className="text-xs sm:text-sm font-bold font-sans text-gray-900 tracking-wide">
+                        Scan to pay <span className="text-[#C8922A] font-black">₹{numericAmount}</span>
+                      </p>
+                    </div>
                   </div>
 
                   <div className="bg-black/80 border border-white/[0.08] p-3 text-center space-y-1">
                     <p className="text-[9px] text-gray-500 font-cad uppercase">UPI ID / VPA</p>
                     <p className="text-xs sm:text-sm font-mono font-bold text-[#C8922A] select-all tracking-wider">
-                      lithikajayabal@okicici
+                      {upiId}
                     </p>
+                    <p className="text-[10px] text-emerald-400 font-cad font-bold pt-0.5">
+                      Payable: ₹{numericAmount}
+                    </p>
+                  </div>
+
+                  <div className="mt-3">
+                    <a
+                      href={upiPaymentUri}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-cad font-bold text-[#C8922A] hover:text-[#EDEBE6] underline underline-offset-4 transition-colors"
+                    >
+                      <span>Pay via UPI App</span>
+                      <ExternalLink size={12} />
+                    </a>
                   </div>
                 </div>
 
@@ -778,7 +834,7 @@ export default function Register() {
                       <Info size={14} /> Verification Guidelines
                     </div>
                     <ul className="text-[11px] text-gray-400 font-cad space-y-2 list-disc pl-4 leading-relaxed">
-                      <li>Pay exact total: <strong className="text-[#C8922A]">₹{totalPayableFee}</strong> using GPay, PhonePe, or Paytm.</li>
+                      <li>Pay exact total: <strong className="text-[#C8922A]">₹{numericAmount}</strong> using GPay, PhonePe, or Paytm.</li>
                       <li>Copy the <strong className="text-white">12-Digit Transaction Ref / UTR ID</strong> from your UPI app receipt.</li>
                       <li>Paste the UTR number below to proceed to final review.</li>
                     </ul>
@@ -1040,7 +1096,7 @@ export default function Register() {
                     </div>
                     <div className="sm:text-right">
                       <span className="text-gray-500 text-[10px] block uppercase">TOTAL AMOUNT PAYABLE</span>
-                      <strong className="text-[#EDEBE6] text-sm font-bold">₹{totalPayableFee}</strong>
+                      <strong className="text-[#EDEBE6] text-sm font-bold">₹{numericAmount}</strong>
                     </div>
                     {screenshotPreview && (
                       <div className="sm:col-span-2 pt-3 border-t border-white/[0.06] flex items-center justify-between">
