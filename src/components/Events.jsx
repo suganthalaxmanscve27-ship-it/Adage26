@@ -4,33 +4,54 @@ import { X, Phone, Mail, ArrowRight, Loader, Zap, FileText, Download, Image as I
 import { Sr, Pt } from '../events';
 import { supabase } from '../supabase';
 
-export const getEventImageUrl = (url) => {
-  if (!url || typeof url !== 'string') return '';
-  if (url.startsWith('data:image')) return url;
-  
-  // Convert any Google Drive sharing / preview / uc / open link to direct embeddable CDN URL
-  const fileIdMatch =
+export const extractGoogleDriveId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const match =
     url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
     url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-    url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-    
-  if (fileIdMatch && fileIdMatch[1]) {
-    return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
-  }
-  return url;
+    url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
 };
 
-export const handleImageError = (e, originalUrl) => {
-  if (!e.target.dataset.triedThumbnail) {
-    e.target.dataset.triedThumbnail = "true";
-    const fileIdMatch =
-      originalUrl?.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-      originalUrl?.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (fileIdMatch && fileIdMatch[1]) {
-      e.target.src = `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1200`;
-      return;
-    }
+export const getEventImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('data:image')) return trimmed;
+  
+  // Convert any Google Drive link to high-res thumbnail endpoint (universally embeddable without 403 / ORB blocks)
+  const fileId = extractGoogleDriveId(trimmed);
+  if (fileId) {
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1200`;
   }
+  return trimmed;
+};
+
+const EVENT_FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1503387762-592dedb8c260?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=800',
+  'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&q=80&w=800'
+];
+
+export const handleImageError = (e, originalUrl, fallbackIdx = 0) => {
+  const target = e.target;
+  const fileId = extractGoogleDriveId(originalUrl);
+
+  if (fileId && !target.dataset.triedLh3) {
+    target.dataset.triedLh3 = "true";
+    target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+    return;
+  }
+
+  if (!target.dataset.triedFallback) {
+    target.dataset.triedFallback = "true";
+    target.src = EVENT_FALLBACK_IMAGES[fallbackIdx % EVENT_FALLBACK_IMAGES.length];
+    return;
+  }
+
+  target.style.display = 'none';
 };
 
 function EventModal({ event, onClose }) {
@@ -344,7 +365,7 @@ export default function Events() {
                         src={getEventImageUrl(event.image)}
                         alt={event.title}
                         loading="lazy"
-                        onError={(e) => handleImageError(e, event.image)}
+                        onError={(e) => handleImageError(e, event.image, i)}
                         className="w-full h-full object-cover object-top opacity-55 group-hover:opacity-75 transition-opacity duration-500"
                       />
                     ) : (

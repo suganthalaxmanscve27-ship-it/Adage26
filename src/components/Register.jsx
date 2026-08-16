@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Check, Info, Users, Smartphone, ShieldCheck, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X, Mail, Clock } from 'lucide-react';
+import { Check, Info, Users, Smartphone, ShieldCheck, Award, ArrowLeft, ArrowRight, Loader, Cpu, Sparkles, Layers, CreditCard, ChevronRight, QrCode, Upload, Image, FileCheck, ExternalLink, X, Mail, Clock, HelpCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../supabase';
 import { Sr, Pt, ut, calculatePricing } from '../events';
@@ -43,6 +43,9 @@ export default function Register() {
   const [error, setError] = useState(null);
   const [createdRecord, setCreatedRecord] = useState(null);
   const [emailDeliveryStatus, setEmailDeliveryStatus] = useState("idle"); // 'idle' | 'sending' | 'sent' | 'failed'
+
+  const [showBundleModal, setShowBundleModal] = useState(false);
+  const [hasShownFirstClickModal, setHasShownFirstClickModal] = useState(false);
 
   const [screenshotFile, setScreenshotFile] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
@@ -210,6 +213,11 @@ export default function Register() {
         events = events.filter(e => e !== id);
       } else {
         events.push(id);
+        // Show explanation modal when user clicks their first event
+        if (prev.selectedEvents.length === 0 && !hasShownFirstClickModal) {
+          setShowBundleModal(true);
+          setHasShownFirstClickModal(true);
+        }
       }
 
       const updatedSelectedList = activeEvents.filter(e => events.includes(e.id));
@@ -416,6 +424,85 @@ export default function Register() {
           {/* STEP 1: EVENT SELECTION */}
           {step === 1 && (
             <div className="p-4 sm:p-8 md:p-12 space-y-6 sm:space-y-8 animate-fade-in">
+              {/* Explanation Modal */}
+              {showBundleModal && (
+                <div
+                  className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+                  onClick={() => setShowBundleModal(false)}
+                >
+                  <div
+                    className="bg-[#0E0E0E] border-2 border-[#C8922A] w-full max-w-md relative p-5 sm:p-6 shadow-[0_0_50px_rgba(200,146,42,0.35)] text-center animate-scale-up"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* Architectural corner accents */}
+                    <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[#C8922A]" />
+                    <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[#C8922A]" />
+                    <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-[#C8922A]" />
+                    <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-[#C8922A]" />
+
+                    <button
+                      onClick={() => setShowBundleModal(false)}
+                      className="absolute top-3.5 right-3.5 text-gray-400 hover:text-white transition-colors p-1"
+                    >
+                      <X size={18} />
+                    </button>
+
+                    {/* Top Callout */}
+                    <div className="mb-2">
+                      <span className="text-[9px] sm:text-[10px] font-cad font-black text-[#C8922A] tracking-[0.2em] uppercase bg-[#C8922A]/10 border border-[#C8922A]/30 px-3 py-1 inline-block">
+                        NO EXTRA CHARGE FOR YOUR 2ND + 3RD + 4TH EVENT
+                      </span>
+                    </div>
+
+                    {/* Header */}
+                    <div className="mb-2">
+                      <span className="text-[9px] font-cad font-bold text-gray-400 tracking-[0.3em] uppercase block">
+                        ADAGE ’26 BASE PASS
+                      </span>
+                      <h3 className="font-cinzel font-black text-2xl sm:text-3xl text-[#EDEBE6] tracking-wider mt-0.5">
+                        ₹350 <span className="text-xs font-cad text-gray-400 font-normal">/ PARTICIPANT</span>
+                      </h3>
+                    </div>
+
+                    {/* Hero Tagline */}
+                    <div className="bg-[#C8922A]/15 border border-[#C8922A]/40 py-1.5 px-3 mb-3.5 inline-block">
+                      <p className="text-xs sm:text-sm font-cad font-bold text-[#C8922A] uppercase tracking-wider">
+                        🎟️ ₹350 BASE PASS — UP TO 4 EVENTS
+                      </p>
+                    </div>
+
+                    {/* Choose up to limits */}
+                    <div className="text-left bg-black/60 border border-white/[0.08] p-3 mb-3 space-y-2">
+                      <div className="flex items-center justify-between p-2 bg-amber-500/5 border border-amber-500/20 text-xs font-cad">
+                        <span className="flex items-center gap-1.5 text-gray-200">
+                          ⚡ <strong>Up to 2 Technical</strong>
+                        </span>
+                        <span className="font-mono text-[11px] text-amber-400 font-bold">
+                          TECHNICAL {techCount} / 2
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-cyan-500/5 border border-cyan-500/20 text-xs font-cad">
+                        <span className="flex items-center gap-1.5 text-gray-200">
+                          🎨 <strong>Up to 2 Non-Technical</strong>
+                        </span>
+                        <span className="font-mono text-[11px] text-cyan-400 font-bold">
+                          NON-TECHNICAL {nonTechCount} / 2
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <button
+                      onClick={() => setShowBundleModal(false)}
+                      className="w-full btn-primary justify-center py-3 text-xs font-bold font-cad tracking-[0.2em]"
+                    >
+                      GOT IT — SELECT EVENTS
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Title & Badge Header */}
               <div className="border-b border-white/[0.08] pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -429,44 +516,100 @@ export default function Register() {
                 </div>
 
                 <div className="flex items-center gap-3 bg-black/60 border border-white/[0.08] px-4 py-2 text-xs font-cad">
-                  <span className="text-gray-400">Tech: <strong className="text-[#C8922A]">₹{techBaseFee}</strong></span>
+                  <span className="text-gray-400">Base Pass: <strong className="text-[#C8922A]">₹350</strong></span>
                   <span className="text-white/20">|</span>
-                  <span className="text-gray-400">Non-Tech: <strong className="text-[#C8922A]">₹{nonTechBaseFee}</strong></span>
+                  <span className="text-gray-400">Includes: <strong className="text-[#C8922A]">Up to 4 Events</strong></span>
                 </div>
               </div>
 
-              {/* Bundle Callout Banner */}
-              <div className="bg-[#C8922A]/10 border border-[#C8922A]/30 p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="text-[#C8922A] flex-shrink-0" size={20} />
-                  <div>
-                    <p className="text-xs font-bold text-[#C8922A] font-cad uppercase tracking-wider">
-                      {isBundleApplied
-                        ? `BUNDLE PASS ACTIVE: ₹350 (SAVING ₹${discountPerHead} / PARTICIPANT)`
-                        : form.selectedEvents.length > 0
-                        ? `DEFAULT EVENT RATE APPLIED: ₹${baseRate} / PARTICIPANT`
-                        : `ADAGE'26 REGISTRATION PASS: ₹350 (UP TO 2 TECH + 2 NON-TECH)`}
+              {/* Prominent Badge Bar with Live Limit Trackers */}
+              <div className="bg-[#111111] border border-[#C8922A]/40 p-4 sm:p-5 relative overflow-hidden shadow-lg space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#C8922A]/20 border border-[#C8922A] flex items-center justify-center text-[#C8922A] flex-shrink-0 text-lg">
+                      🎟️
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-cinzel font-black text-sm sm:text-base text-[#EDEBE6] tracking-wide">
+                          ₹350 = UP TO 4 EVENTS
+                        </span>
+                        <span className="text-[9px] font-cad font-bold text-[#C8922A] bg-[#C8922A]/10 border border-[#C8922A]/30 px-2 py-0.5 uppercase tracking-wider">
+                          2 Technical + 2 Non-Technical
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 font-cad mt-0.5">
+                        Your base ₹350 pass includes up to 2 Tech + 2 Non-Tech competitions.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowBundleModal(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-cad font-bold text-[#C8922A] hover:text-[#EDEBE6] underline underline-offset-4 self-start md:self-auto transition-colors"
+                  >
+                    <HelpCircle size={14} />
+                    <span>How does the ₹350 pass work?</span>
+                  </button>
+                </div>
+
+                {/* Live Category Trackers */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-white/[0.08]">
+                  {/* Technical Live Tracker */}
+                  <div className={`p-3 border transition-colors ${techCount >= 2 ? 'bg-amber-500/10 border-amber-500/40' : 'bg-black/40 border-white/[0.06]'}`}>
+                    <div className="flex justify-between items-center text-xs font-cad font-bold mb-1">
+                      <span className="flex items-center gap-1.5 text-amber-400">
+                        ⚡ TECHNICAL EVENTS
+                      </span>
+                      <span className={`font-mono text-xs px-2 py-0.5 rounded ${techCount >= 2 ? 'bg-amber-500 text-black font-black' : 'text-gray-300 bg-white/10'}`}>
+                        TECHNICAL {techCount} / 2
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-cad">
+                      {techCount >= 2 ? (
+                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                          <Check size={12} /> Technical limit reached — 2/2 {techCount > 2 ? `(+${techCount - 2} Extra @ ₹200)` : '(Included)'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">
+                          {2 - techCount} more Technical event{2 - techCount > 1 ? 's' : ''} included free in pass
+                        </span>
+                      )}
                     </p>
-                    <p className="text-[10px] text-gray-400 font-cad">
-                      {form.selectedEvents.length === 0
-                        ? `Default Rates: Tech ₹200 | Non-Tech ₹150. Bundle offer: Get up to 2 Tech + 2 Non-Tech events for just ₹350 per head!`
-                        : isBundleApplied
-                        ? `Bundle Active: ${Math.min(techCount, 2)}/2 Tech & ${Math.min(nonTechCount, 2)}/2 Non-Tech in ₹350 pass.${(techCount > 2 || nonTechCount > 2) ? ` (+${Math.max(0, techCount - 2)} Extra Tech, +${Math.max(0, nonTechCount - 2)} Extra Non-Tech).` : (techCount < 2 || nonTechCount < 2) ? ` You can add ${Math.max(0, 2 - techCount)} Tech and ${Math.max(0, 2 - nonTechCount)} Non-Tech at no extra charge!` : ' Full bundle capacity utilized (2 Tech + 2 Non-Tech).'}`
-                        : `You have selected ${techCount} Tech (₹${techCount * techBaseFee}) & ${nonTechCount} Non-Tech (₹${nonTechCount * nonTechBaseFee}). Add more events to unlock the ₹350 mega pass!`}
+                  </div>
+
+                  {/* Non-Technical Live Tracker */}
+                  <div className={`p-3 border transition-colors ${nonTechCount >= 2 ? 'bg-cyan-500/10 border-cyan-500/40' : 'bg-black/40 border-white/[0.06]'}`}>
+                    <div className="flex justify-between items-center text-xs font-cad font-bold mb-1">
+                      <span className="flex items-center gap-1.5 text-cyan-400">
+                        🎨 NON-TECHNICAL EVENTS
+                      </span>
+                      <span className={`font-mono text-xs px-2 py-0.5 rounded ${nonTechCount >= 2 ? 'bg-cyan-500 text-black font-black' : 'text-gray-300 bg-white/10'}`}>
+                        NON-TECHNICAL {nonTechCount} / 2
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-cad">
+                      {nonTechCount >= 2 ? (
+                        <span className="text-cyan-400 font-bold flex items-center gap-1">
+                          <Check size={12} /> Non-Technical limit reached — 2/2 {nonTechCount > 2 ? `(+${nonTechCount - 2} Extra @ ₹150)` : '(Included)'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">
+                          {2 - nonTechCount} more Non-Technical event{2 - nonTechCount > 1 ? 's' : ''} included free in pass
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 bg-[#C8922A] text-black text-[9px] font-black uppercase font-cad tracking-widest flex-shrink-0">
-                  {discountPerHead > 0 ? `SAVED ₹${discountPerHead}` : isBundleApplied ? '₹350 PASS' : 'STANDARD'}
-                </span>
               </div>
 
               {/* Event Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {activeEvents.map(event => {
                   const isSelected = form.selectedEvents.includes(event.id);
-                  const isTech = event.category === Pt.TECHNICAL;
-                  const isNonTech = event.category === Pt.NON_TECHNICAL;
+                  const isTech = event.category === Pt.TECHNICAL || event.category === 'Technical';
+                  const isNonTech = event.category === Pt.NON_TECHNICAL || event.category === 'Non-Technical';
 
                   let isCoveredInBundle = false;
                   if (isSelected && isBundleApplied) {
@@ -520,27 +663,25 @@ export default function Register() {
                         <span className="text-gray-500 flex items-center gap-1">
                           <Users size={12} /> Max: {event.maxMembers} Member{event.maxMembers > 1 ? 's' : ''}
                         </span>
-                        <span className="font-bold text-[#C8922A] text-xs">
+                        <span className="font-bold text-xs">
                           {isSelected ? (
                             isCoveredInBundle ? (
                               <span className="text-emerald-400 font-black flex items-center gap-1">
-                                <span className="line-through text-gray-500 text-[10px]">₹{isTech ? techBaseFee : nonTechBaseFee}</span> IN BUNDLE
-                              </span>
-                            ) : isBundleApplied ? (
-                              <span className="text-[#C8922A] font-black">
-                                +₹{isTech ? techBaseFee : nonTechBaseFee} (EXTRA)
+                                <Check size={12} /> INCLUDED IN ₹350 PASS
                               </span>
                             ) : (
                               <span className="text-[#C8922A] font-black">
-                                ₹{isTech ? techBaseFee : nonTechBaseFee}
+                                +₹{isTech ? techBaseFee : nonTechBaseFee} (EXTRA)
                               </span>
                             )
                           ) : canBeCoveredInBundle ? (
-                            <span>
-                              ₹{event.fee || (isTech ? techBaseFee : nonTechBaseFee)} <span className="text-[9px] text-emerald-400 font-normal">(Bundle Eligible)</span>
+                            <span className="text-emerald-400/90 font-medium">
+                              Included in ₹350 Pass
                             </span>
                           ) : (
-                            `+₹${event.fee || (isTech ? techBaseFee : nonTechBaseFee)} (Extra)`
+                            <span className="text-gray-400">
+                              +₹{isTech ? techBaseFee : nonTechBaseFee} (Extra Event)
+                            </span>
                           )}
                         </span>
                       </div>
