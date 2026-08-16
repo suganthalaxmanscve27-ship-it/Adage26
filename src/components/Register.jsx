@@ -123,7 +123,7 @@ export default function Register() {
   
   // Reusable Fee Calculation:
   const pricingDetails = calculatePricing(techCount, nonTechCount, totalParticipants);
-  const { normalTotal, discount: discountPerHead, baseRate, totalPayableFee, bundleEventsCount, extraTechCount, extraNonTechCount } = pricingDetails;
+  const { normalTotal, discount: discountPerHead, baseRate, totalPayableFee, bundleEventsCount, extraTechCount, extraNonTechCount, isBundleApplied } = pricingDetails;
 
   // Selected event details for dynamic UPI QR generation
   const selectedEvent = selectedEventsList[0];
