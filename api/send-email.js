@@ -1,35 +1,27 @@
 /**
- * Brevo (Sendinblue) Transactional Email Service Utility
- * For ADAGE'26 National Level Technical Symposium
+ * Vercel Serverless API Route: /api/send-email
+ * 
+ * Securely communicates with Brevo Transactional Email API without exposing
+ * the API key to the client frontend.
+ * 
+ * Environment Variables Required on Vercel:
+ * - BREVO_API_KEY
+ * - BREVO_SENDER_EMAIL (defaults to civiladagegce@gmail.com)
  */
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-// Read strictly from environment variables - NO hardcoded API keys in source code
-const getApiKey = () => {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.VITE_BREVO_API_KEY || "";
-  }
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env.VITE_BREVO_API_KEY || process.env.BREVO_API_KEY || "";
-  }
-  return "";
-};
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
-const getSenderEmail = () => {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.VITE_BREVO_SENDER_EMAIL || "civiladagegce@gmail.com";
-  }
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env.VITE_BREVO_SENDER_EMAIL || process.env.BREVO_SENDER_EMAIL || "civiladagegce@gmail.com";
-  }
-  return "civiladagegce@gmail.com";
-};
-
-/**
- * Builds a styled HTML email template for registration receipt & payment review
- */
-export function generateRegistrationEmailHtml({
+function generateRegistrationEmailHtml({
   id,
   name,
   college,
@@ -61,15 +53,10 @@ export function generateRegistrationEmailHtml({
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #050505; padding: 30px 10px;">
     <tr>
       <td align="center">
-        <!-- Main Container -->
         <table role="presentation" width="100%" max-width="620" cellspacing="0" cellpadding="0" border="0" style="max-width: 620px; background-color: #0D0D0D; border: 1px solid rgba(200, 146, 42, 0.3); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-          
-          <!-- Gold Accent Bar -->
           <tr>
             <td style="height: 4px; background: linear-gradient(90deg, #996B15 0%, #C8922A 50%, #F5CE68 100%);"></td>
           </tr>
-
-          <!-- Header -->
           <tr>
             <td style="padding: 32px 30px 24px 30px; text-align: center; background-color: #111111; border-bottom: 1px solid rgba(255,255,255,0.08);">
               <div style="font-size: 11px; letter-spacing: 4px; color: #C8922A; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
@@ -83,8 +70,6 @@ export function generateRegistrationEmailHtml({
               </p>
             </td>
           </tr>
-
-          <!-- Status Banner -->
           <tr>
             <td style="padding: 24px 30px 16px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: rgba(200, 146, 42, 0.08); border: 1px solid rgba(200, 146, 42, 0.25); border-radius: 6px; padding: 18px 20px;">
@@ -102,8 +87,6 @@ export function generateRegistrationEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Registration ID Card -->
           <tr>
             <td style="padding: 0 30px 20px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #151515; border: 1px dashed rgba(200, 146, 42, 0.4); border-radius: 6px; padding: 16px 20px;">
@@ -122,8 +105,6 @@ export function generateRegistrationEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Participant & Institution Details -->
           <tr>
             <td style="padding: 0 30px 20px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #111111; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 20px;">
@@ -155,8 +136,6 @@ export function generateRegistrationEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Registered Events -->
           <tr>
             <td style="padding: 0 30px 20px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #111111; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 20px;">
@@ -175,8 +154,6 @@ export function generateRegistrationEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Team Members (If Any) -->
           ${teamMembers && teamMembers.length > 0 ? `
           <tr>
             <td style="padding: 0 30px 20px 30px;">
@@ -197,8 +174,6 @@ export function generateRegistrationEmailHtml({
             </td>
           </tr>
           ` : ''}
-
-          <!-- Payment Breakdown -->
           <tr>
             <td style="padding: 0 30px 24px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #111111; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 20px;">
@@ -218,8 +193,6 @@ export function generateRegistrationEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Next Steps & Verification Notice -->
           <tr>
             <td style="padding: 0 30px 30px 30px;">
               <div style="background-color: #141414; border-left: 3px solid #C8922A; padding: 16px; border-radius: 0 6px 6px 0;">
@@ -232,19 +205,16 @@ export function generateRegistrationEmailHtml({
               </div>
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="padding: 24px 30px; background-color: #0A0A0A; border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
               <p style="margin: 0 0 8px 0; font-size: 11px; color: #777; letter-spacing: 1px;">
                 ADAGE'26 ORGANIZING COMMITTEE • DEPARTMENT OF CIVIL ENGINEERING
               </p>
               <p style="margin: 0; font-size: 10px; color: #555;">
-                Government College of Engineering • Contact: <a href="mailto:civilagegce@gmail.com" style="color: #C8922A; text-decoration: none;">civilagegce@gmail.com</a>
+                Government College of Engineering • Contact: <a href="mailto:civiladagegce@gmail.com" style="color: #C8922A; text-decoration: none;">civiladagegce@gmail.com</a>
               </p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -254,23 +224,7 @@ export function generateRegistrationEmailHtml({
   `.trim();
 }
 
-/**
- * Escapes HTML characters to prevent XSS / broken markup in email body
- */
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/**
- * Builds a styled HTML email template for Payment Confirmed / Entry Pass Activated
- */
-export function generatePaymentConfirmedEmailHtml({
+function generatePaymentConfirmedEmailHtml({
   id,
   name,
   college,
@@ -302,15 +256,10 @@ export function generatePaymentConfirmedEmailHtml({
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #050505; padding: 30px 10px;">
     <tr>
       <td align="center">
-        <!-- Main Container -->
         <table role="presentation" width="100%" max-width="620" cellspacing="0" cellpadding="0" border="0" style="max-width: 620px; background-color: #0D0D0D; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-          
-          <!-- Green Accent Bar -->
           <tr>
             <td style="height: 4px; background: linear-gradient(90deg, #059669 0%, #10B981 50%, #34D399 100%);"></td>
           </tr>
-
-          <!-- Header -->
           <tr>
             <td style="padding: 32px 30px 24px 30px; text-align: center; background-color: #111111; border-bottom: 1px solid rgba(255,255,255,0.08);">
               <div style="font-size: 11px; letter-spacing: 4px; color: #10B981; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
@@ -324,8 +273,6 @@ export function generatePaymentConfirmedEmailHtml({
               </p>
             </td>
           </tr>
-
-          <!-- Success Banner -->
           <tr>
             <td style="padding: 24px 30px 16px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 18px 20px;">
@@ -343,8 +290,6 @@ export function generatePaymentConfirmedEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Registration ID Card -->
           <tr>
             <td style="padding: 0 30px 20px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #151515; border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 6px; padding: 16px 20px;">
@@ -363,8 +308,6 @@ export function generatePaymentConfirmedEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Participant & Institution Details -->
           <tr>
             <td style="padding: 0 30px 20px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #111111; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 20px;">
@@ -392,8 +335,6 @@ export function generatePaymentConfirmedEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Registered Events -->
           <tr>
             <td style="padding: 0 30px 20px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #111111; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 20px;">
@@ -412,8 +353,6 @@ export function generatePaymentConfirmedEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Team Members (If Any) -->
           ${teamMembers && teamMembers.length > 0 ? `
           <tr>
             <td style="padding: 0 30px 20px 30px;">
@@ -434,8 +373,6 @@ export function generatePaymentConfirmedEmailHtml({
             </td>
           </tr>
           ` : ''}
-
-          <!-- Event Day Instructions Card -->
           <tr>
             <td style="padding: 0 30px 30px 30px;">
               <div style="background-color: #141414; border-left: 3px solid #10B981; padding: 16px; border-radius: 0 6px 6px 0;">
@@ -448,8 +385,6 @@ export function generatePaymentConfirmedEmailHtml({
               </div>
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="padding: 24px 30px; background-color: #0A0A0A; border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
               <p style="margin: 0 0 8px 0; font-size: 11px; color: #777; letter-spacing: 1px;">
@@ -460,7 +395,6 @@ export function generatePaymentConfirmedEmailHtml({
               </p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -470,10 +404,7 @@ export function generatePaymentConfirmedEmailHtml({
   `.trim();
 }
 
-/**
- * Builds a styled HTML email template for Payment Rejected / Verification Issue
- */
-export function generatePaymentRejectedEmailHtml({
+function generatePaymentRejectedEmailHtml({
   id,
   name,
   college,
@@ -497,15 +428,10 @@ export function generatePaymentRejectedEmailHtml({
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #050505; padding: 30px 10px;">
     <tr>
       <td align="center">
-        <!-- Main Container -->
         <table role="presentation" width="100%" max-width="620" cellspacing="0" cellpadding="0" border="0" style="max-width: 620px; background-color: #0D0D0D; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-          
-          <!-- Red Accent Bar -->
           <tr>
             <td style="height: 4px; background: linear-gradient(90deg, #DC2626 0%, #EF4444 50%, #F87171 100%);"></td>
           </tr>
-
-          <!-- Header -->
           <tr>
             <td style="padding: 32px 30px 24px 30px; text-align: center; background-color: #111111; border-bottom: 1px solid rgba(255,255,255,0.08);">
               <div style="font-size: 11px; letter-spacing: 4px; color: #EF4444; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
@@ -519,8 +445,6 @@ export function generatePaymentRejectedEmailHtml({
               </p>
             </td>
           </tr>
-
-          <!-- Alert Banner -->
           <tr>
             <td style="padding: 24px 30px 16px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 18px 20px;">
@@ -538,8 +462,6 @@ export function generatePaymentRejectedEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Registration ID Card -->
           <tr>
             <td style="padding: 0 30px 20px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #151515; border: 1px dashed rgba(239, 68, 68, 0.4); border-radius: 6px; padding: 16px 20px;">
@@ -558,8 +480,6 @@ export function generatePaymentRejectedEmailHtml({
               </table>
             </td>
           </tr>
-
-          <!-- Action Steps Notice -->
           <tr>
             <td style="padding: 0 30px 30px 30px;">
               <div style="background-color: #141414; border-left: 3px solid #EF4444; padding: 18px; border-radius: 0 6px 6px 0;">
@@ -572,8 +492,6 @@ export function generatePaymentRejectedEmailHtml({
               </div>
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="padding: 24px 30px; background-color: #0A0A0A; border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
               <p style="margin: 0 0 8px 0; font-size: 11px; color: #777; letter-spacing: 1px;">
@@ -584,7 +502,6 @@ export function generatePaymentRejectedEmailHtml({
               </p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -594,77 +511,68 @@ export function generatePaymentRejectedEmailHtml({
   `.trim();
 }
 
-/**
- * Dispatches transactional email via secure backend endpoint (/api/send-email)
- * with client-side direct fallback if configured.
- */
-async function dispatchEmail({ type, registrationData, newStatus }) {
-  if (!registrationData || !registrationData.email) {
-    console.warn("Recipient email missing in registration data");
-    return { success: false, error: "Missing recipient email" };
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed. Only POST is supported." });
   }
 
-  // 1. Try secure serverless route (/api/send-email) first (works on Vercel & local Vite dev middleware)
-  try {
-    const res = await fetch("/api/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, registrationData, newStatus })
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      console.log("Email dispatched via /api/send-email:", data);
-      return { success: true, messageId: data.messageId };
-    } else {
-      const errData = await res.json().catch(() => ({}));
-      console.warn("/api/send-email responded with status:", res.status, errData);
-    }
-  } catch (apiErr) {
-    console.warn("/api/send-email endpoint not reachable directly, checking client fallback:", apiErr);
-  }
-
-  // 2. Direct client fallback (if VITE_BREVO_API_KEY is available)
-  const apiKey = getApiKey();
-  const senderEmail = getSenderEmail();
+  const apiKey =
+    process.env.BREVO_API_KEY ||
+    process.env.VITE_BREVO_API_KEY ||
+    "";
+  const senderEmail =
+    process.env.BREVO_SENDER_EMAIL ||
+    process.env.VITE_BREVO_SENDER_EMAIL ||
+    "civiladagegce@gmail.com";
 
   if (!apiKey) {
-    return { success: false, error: "Missing API key or server endpoint" };
+    console.error("Vercel Serverless Function error: BREVO_API_KEY is not set in environment.");
+    return res.status(500).json({ error: "BREVO_API_KEY is not set in Vercel environment variables." });
   }
-
-  let subject = "";
-  let htmlContent = "";
-  const normalizedType = String(type).toUpperCase();
-  const normalizedStatus = String(newStatus || "").toUpperCase();
-
-  if (normalizedType === "CONFIRMED" || normalizedStatus.includes("CONFIRM")) {
-    subject = `Payment Confirmed & Entry Pass Activated - ADAGE'26 (Ref: ${registrationData.id || "Confirmed"})`;
-    htmlContent = generatePaymentConfirmedEmailHtml(registrationData);
-  } else if (normalizedType === "REJECTED" || normalizedStatus.includes("REJECT")) {
-    subject = `Payment Verification Notice - ADAGE'26 (Ref: ${registrationData.id || "Notice"})`;
-    htmlContent = generatePaymentRejectedEmailHtml(registrationData);
-  } else {
-    subject = `Registration Received - ADAGE'26 (Ref: ${registrationData.id || "Pending"})`;
-    htmlContent = generateRegistrationEmailHtml(registrationData);
-  }
-
-  const payload = {
-    sender: {
-      name: "ADAGE'26 - Civil Engineering Symposium",
-      email: senderEmail
-    },
-    to: [
-      {
-        email: registrationData.email.trim(),
-        name: registrationData.name ? registrationData.name.trim() : "Participant"
-      }
-    ],
-    subject,
-    htmlContent
-  };
 
   try {
-    const response = await fetch(BREVO_API_URL, {
+    const { type = "REGISTRATION", registrationData, newStatus } = req.body || {};
+
+    if (!registrationData || !registrationData.email) {
+      return res.status(400).json({ error: "Missing recipient email in registrationData." });
+    }
+
+    const recipientEmail = registrationData.email.trim();
+    const recipientName = registrationData.name ? registrationData.name.trim() : "Participant";
+
+    let subject = "";
+    let htmlContent = "";
+
+    const normalizedType = String(type).toUpperCase();
+    const normalizedStatus = String(newStatus || "").toUpperCase();
+
+    if (normalizedType === "CONFIRMED" || normalizedStatus.includes("CONFIRM")) {
+      subject = `Payment Confirmed & Entry Pass Activated - ADAGE'26 (Ref: ${registrationData.id || "Confirmed"})`;
+      htmlContent = generatePaymentConfirmedEmailHtml(registrationData);
+    } else if (normalizedType === "REJECTED" || normalizedStatus.includes("REJECT")) {
+      subject = `Payment Verification Notice - ADAGE'26 (Ref: ${registrationData.id || "Notice"})`;
+      htmlContent = generatePaymentRejectedEmailHtml(registrationData);
+    } else {
+      subject = `Registration Received - ADAGE'26 (Ref: ${registrationData.id || "Pending"})`;
+      htmlContent = generateRegistrationEmailHtml(registrationData);
+    }
+
+    const payload = {
+      sender: {
+        name: "ADAGE'26 - Civil Engineering Symposium",
+        email: senderEmail
+      },
+      to: [
+        {
+          email: recipientEmail,
+          name: recipientName
+        }
+      ],
+      subject: subject,
+      htmlContent: htmlContent
+    };
+
+    const brevoResponse = await fetch(BREVO_API_URL, {
       method: "POST",
       headers: {
         "accept": "application/json",
@@ -674,52 +582,24 @@ async function dispatchEmail({ type, registrationData, newStatus }) {
       body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
-    if (!response.ok) {
+    const result = await brevoResponse.json();
+
+    if (!brevoResponse.ok) {
       console.error("Brevo API error:", result);
-      return { success: false, error: result.message || "Failed to dispatch email" };
+      return res.status(brevoResponse.status).json({
+        error: result.message || "Failed to dispatch email via Brevo",
+        details: result
+      });
     }
-    console.log("Brevo email dispatched directly! Message ID:", result.messageId);
-    return { success: true, messageId: result.messageId };
+
+    return res.status(200).json({
+      success: true,
+      messageId: result.messageId
+    });
   } catch (err) {
-    console.error("Error dispatching email:", err);
-    return { success: false, error: err.message };
+    console.error("Serverless handler execution error:", err);
+    return res.status(500).json({
+      error: err.message || "Internal server error"
+    });
   }
-}
-
-/**
- * Sends registration confirmation email
- */
-export async function sendRegistrationSuccessEmail(registrationData) {
-  return dispatchEmail({ type: "REGISTRATION", registrationData });
-}
-
-/**
- * Sends payment confirmed email
- */
-export async function sendPaymentConfirmedEmail(registrationData) {
-  return dispatchEmail({ type: "CONFIRMED", registrationData });
-}
-
-/**
- * Sends payment rejected email
- */
-export async function sendPaymentRejectedEmail(registrationData) {
-  return dispatchEmail({ type: "REJECTED", registrationData });
-}
-
-/**
- * Helper to automatically dispatch the right email based on updated status
- */
-export async function sendPaymentStatusEmail(registrationData, newStatus) {
-  if (!registrationData) return { success: false, error: "No registration data" };
-
-  const norm = String(newStatus).toUpperCase();
-  if (norm.includes("CONFIRM")) {
-    return sendPaymentConfirmedEmail(registrationData);
-  } else if (norm.includes("REJECT")) {
-    return sendPaymentRejectedEmail(registrationData);
-  }
-
-  return { success: false, error: "No email template required for status: " + newStatus };
 }
