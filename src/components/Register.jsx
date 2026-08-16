@@ -441,19 +441,23 @@ export default function Register() {
                   <Sparkles className="text-[#C8922A] flex-shrink-0" size={20} />
                   <div>
                     <p className="text-xs font-bold text-[#C8922A] font-cad uppercase tracking-wider">
-                      {form.selectedEvents.length > 0
-                        ? `BUNDLE PASS ACTIVE: ₹350 (UP TO 2 TECH + 2 NON-TECH)`
+                      {isBundleApplied
+                        ? `BUNDLE PASS ACTIVE: ₹350 (SAVING ₹${discountPerHead} / PARTICIPANT)`
+                        : form.selectedEvents.length > 0
+                        ? `DEFAULT EVENT RATE APPLIED: ₹${baseRate} / PARTICIPANT`
                         : `ADAGE'26 REGISTRATION PASS: ₹350 (UP TO 2 TECH + 2 NON-TECH)`}
                     </p>
                     <p className="text-[10px] text-gray-400 font-cad">
                       {form.selectedEvents.length === 0
-                        ? `Bundle includes up to 2 Technical + 2 Non-Technical events (4 events max) for a flat ₹350 per head! Extra events: Tech ₹200 | Non-Tech ₹150.`
-                        : `Bundle Status: ${techCount}/2 Tech & ${nonTechCount}/2 Non-Tech included in ₹350 pass.${(techCount > 2 || nonTechCount > 2) ? ` (+${Math.max(0, techCount - 2)} Extra Tech, +${Math.max(0, nonTechCount - 2)} Extra Non-Tech).` : (techCount < 2 || nonTechCount < 2) ? ` You can still add ${Math.max(0, 2 - techCount)} Tech and ${Math.max(0, 2 - nonTechCount)} Non-Tech at no extra fee!` : ' Full bundle capacity utilized (2 Tech + 2 Non-Tech).'}`}
+                        ? `Default Rates: Tech ₹200 | Non-Tech ₹150. Bundle offer: Get up to 2 Tech + 2 Non-Tech events for just ₹350 per head!`
+                        : isBundleApplied
+                        ? `Bundle Active: ${Math.min(techCount, 2)}/2 Tech & ${Math.min(nonTechCount, 2)}/2 Non-Tech in ₹350 pass.${(techCount > 2 || nonTechCount > 2) ? ` (+${Math.max(0, techCount - 2)} Extra Tech, +${Math.max(0, nonTechCount - 2)} Extra Non-Tech).` : (techCount < 2 || nonTechCount < 2) ? ` You can add ${Math.max(0, 2 - techCount)} Tech and ${Math.max(0, 2 - nonTechCount)} Non-Tech at no extra charge!` : ' Full bundle capacity utilized (2 Tech + 2 Non-Tech).'}`
+                        : `You have selected ${techCount} Tech (₹${techCount * techBaseFee}) & ${nonTechCount} Non-Tech (₹${nonTechCount * nonTechBaseFee}). Add more events to unlock the ₹350 mega pass!`}
                     </p>
                   </div>
                 </div>
                 <span className="px-2.5 py-1 bg-[#C8922A] text-black text-[9px] font-black uppercase font-cad tracking-widest flex-shrink-0">
-                  {discountPerHead > 0 ? `SAVED ₹${discountPerHead}` : '₹350 PASS'}
+                  {discountPerHead > 0 ? `SAVED ₹${discountPerHead}` : isBundleApplied ? '₹350 PASS' : 'STANDARD'}
                 </span>
               </div>
 
@@ -465,7 +469,7 @@ export default function Register() {
                   const isNonTech = event.category === Pt.NON_TECHNICAL;
 
                   let isCoveredInBundle = false;
-                  if (isSelected) {
+                  if (isSelected && isBundleApplied) {
                     const techIndex = techSelectedList.findIndex(e => e.id === event.id);
                     const nonTechIndex = nonTechSelectedList.findIndex(e => e.id === event.id);
                     if (isTech && techIndex >= 0 && techIndex < 2) {
@@ -522,14 +526,18 @@ export default function Register() {
                               <span className="text-emerald-400 font-black flex items-center gap-1">
                                 <span className="line-through text-gray-500 text-[10px]">₹{isTech ? techBaseFee : nonTechBaseFee}</span> IN BUNDLE
                               </span>
-                            ) : (
+                            ) : isBundleApplied ? (
                               <span className="text-[#C8922A] font-black">
                                 +₹{isTech ? techBaseFee : nonTechBaseFee} (EXTRA)
+                              </span>
+                            ) : (
+                              <span className="text-[#C8922A] font-black">
+                                ₹{isTech ? techBaseFee : nonTechBaseFee}
                               </span>
                             )
                           ) : canBeCoveredInBundle ? (
                             <span>
-                              ₹{event.fee || (isTech ? techBaseFee : nonTechBaseFee)} <span className="text-[9px] text-emerald-400 font-normal">(In Bundle)</span>
+                              ₹{event.fee || (isTech ? techBaseFee : nonTechBaseFee)} <span className="text-[9px] text-emerald-400 font-normal">(Bundle Eligible)</span>
                             </span>
                           ) : (
                             `+₹${event.fee || (isTech ? techBaseFee : nonTechBaseFee)} (Extra)`

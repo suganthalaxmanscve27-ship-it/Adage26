@@ -150,12 +150,14 @@ export const Sr = [
 /**
  * Calculates pricing details for ADAGE'26 event registration.
  * 
- * Pricing & Bundle Rules:
- * - Bundle Pass: ₹350 per participant.
- * - Bundle includes up to 4 events max: exactly up to 2 Technical + up to 2 Non-Technical events.
- * - Events beyond the bundle limits:
- *   - Additional Technical events (beyond 2) = ₹200 each
- *   - Additional Non-Technical events (beyond 2) = ₹150 each
+ * Default Event Rates:
+ * - Technical Event = ₹200
+ * - Non-Technical Event = ₹150
+ * 
+ * Bundle Offer:
+ * - ₹350 flat pass covers up to 2 Technical + up to 2 Non-Technical events (4 events max).
+ * - Additional events beyond 2 Tech or 2 Non-Tech are charged at default rates (+₹200 Tech, +₹150 Non-Tech).
+ * - If individual selection costs less than the bundle (e.g. 1 Tech @ ₹200 or 1 Non-Tech @ ₹150), default rate applies.
  */
 export function calculatePricing(techCount, nonTechCount, totalParticipants = 1) {
   const techBaseFee = 200;
@@ -163,29 +165,44 @@ export function calculatePricing(techCount, nonTechCount, totalParticipants = 1)
   const bundleFee = 350;
   const totalEvents = techCount + nonTechCount;
 
-  let baseRate = 0;
-  let techInBundle = 0;
-  let nonTechInBundle = 0;
-  let extraTechCount = 0;
-  let extraNonTechCount = 0;
-
   if (totalEvents === 0) {
-    baseRate = 0;
-  } else {
-    // Bundle allows up to 2 Technical and up to 2 Non-Technical events
-    techInBundle = Math.min(techCount, 2);
-    nonTechInBundle = Math.min(nonTechCount, 2);
-
-    extraTechCount = Math.max(0, techCount - 2);
-    extraNonTechCount = Math.max(0, nonTechCount - 2);
-
-    baseRate = bundleFee + (extraTechCount * techBaseFee) + (extraNonTechCount * nonTechBaseFee);
+    return {
+      techCount: 0,
+      nonTechCount: 0,
+      totalEvents: 0,
+      techBaseFee,
+      nonTechBaseFee,
+      bundleFee,
+      techInBundle: 0,
+      nonTechInBundle: 0,
+      bundleEventsCount: 0,
+      extraTechCount: 0,
+      extraNonTechCount: 0,
+      normalTotal: 0,
+      discount: 0,
+      baseRate: 0,
+      isBundleApplied: false,
+      totalParticipants: totalParticipants || 1,
+      totalPayableFee: 0
+    };
   }
 
-  const bundleEventsCount = techInBundle + nonTechInBundle;
   const normalTotal = (techCount * techBaseFee) + (nonTechCount * nonTechBaseFee);
+
+  // Bundle pricing: up to 2 Tech + 2 Non-Tech covered in ₹350 pass
+  const extraTechCount = Math.max(0, techCount - 2);
+  const extraNonTechCount = Math.max(0, nonTechCount - 2);
+  const bundleRate = bundleFee + (extraTechCount * techBaseFee) + (extraNonTechCount * nonTechBaseFee);
+
+  // Apply whichever is more beneficial for the participant
+  const isBundleApplied = bundleRate < normalTotal;
+  const baseRate = Math.min(normalTotal, bundleRate);
   const discount = Math.max(0, normalTotal - baseRate);
   const totalPayableFee = (totalParticipants || 1) * baseRate;
+
+  const techInBundle = isBundleApplied ? Math.min(techCount, 2) : 0;
+  const nonTechInBundle = isBundleApplied ? Math.min(nonTechCount, 2) : 0;
+  const bundleEventsCount = techInBundle + nonTechInBundle;
 
   return {
     techCount,
@@ -202,6 +219,7 @@ export function calculatePricing(techCount, nonTechCount, totalParticipants = 1)
     normalTotal,
     discount,
     baseRate,
+    isBundleApplied,
     totalParticipants: totalParticipants || 1,
     totalPayableFee
   };
