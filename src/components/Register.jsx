@@ -99,7 +99,7 @@ export default function Register() {
 
   const upiId = "sukanthalax@oksbi";
   const payeeName = "Suganth S";
-  const techBaseFee = 250;
+  const techBaseFee = 200;
   const nonTechBaseFee = 150;
 
   // Selected events config
@@ -123,21 +123,13 @@ export default function Register() {
   
   // Reusable Fee Calculation:
   const pricingDetails = calculatePricing(techCount, nonTechCount, totalParticipants);
-  const { normalTotal, bundleCount, discount: discountPerHead, baseRate, totalPayableFee } = pricingDetails;
+  const { normalTotal, discount: discountPerHead, baseRate, totalPayableFee, bundleEventsCount, extraTechCount, extraNonTechCount } = pricingDetails;
 
   // Selected event details for dynamic UPI QR generation
   const selectedEvent = selectedEventsList[0];
 
   // Dynamic safe numeric fee calculation based on selected event(s) and participants
-  let rawFee = 0;
-  if (selectedEventsList.length === 1 && selectedEvent?.fee !== undefined && selectedEvent?.fee !== null) {
-    const parsed = typeof selectedEvent.fee === 'number'
-      ? selectedEvent.fee
-      : parseFloat(String(selectedEvent.fee).replace(/[^0-9.]/g, ''));
-    rawFee = !isNaN(parsed) ? parsed * totalParticipants : (totalPayableFee || 0);
-  } else {
-    rawFee = typeof totalPayableFee === 'number' && !isNaN(totalPayableFee) ? totalPayableFee : 0;
-  }
+  const rawFee = typeof totalPayableFee === 'number' && !isNaN(totalPayableFee) ? totalPayableFee : 0;
 
   // Ensure amount is strictly a valid finite positive number (no NaN, undefined, null, or string formatting)
   const numericAmount = (typeof rawFee === 'number' && !isNaN(rawFee) && isFinite(rawFee) && rawFee >= 0) ? rawFee : 0;
@@ -217,16 +209,6 @@ export default function Register() {
       if (isSelected) {
         events = events.filter(e => e !== id);
       } else {
-        const currentSelectedList = activeEvents.filter(e => events.includes(e.id));
-        const currentTechCount = currentSelectedList.filter(e => e.category === Pt.TECHNICAL).length;
-        const currentNonTechCount = currentSelectedList.filter(e => e.category === Pt.NON_TECHNICAL).length;
-
-        // Rule 1: Max 2 technical events allowed
-        if (targetEvent.category === Pt.TECHNICAL && currentTechCount >= 2) {
-          return prev;
-        }
-
-        // Non-Technical events have no limit (participants can select as many as they want)
         events.push(id);
       }
 
@@ -454,34 +436,26 @@ export default function Register() {
               </div>
 
               {/* Bundle Callout Banner */}
-              {hasTechSelected && (
-                <div className="bg-[#C8922A]/10 border border-[#C8922A]/30 p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="text-[#C8922A] flex-shrink-0" size={20} />
-                    <div>
-                      <p className="text-xs font-bold text-[#C8922A] font-cad uppercase tracking-wider">
-                        {discountPerHead > 0
-                          ? `BUNDLE OFFER APPLIED: ₹${discountPerHead} DISCOUNT / PARTICIPANT (${bundleCount} BUNDLE${bundleCount > 1 ? 'S' : ''})`
-                          : `TECH + NON-TECH BUNDLE OFFER AVAILABLE`}
-                      </p>
-                      <p className="text-[10px] text-gray-400 font-cad">
-                        {discountPerHead > 0
-                          ? bundleCount === 2
-                            ? `Awesome! 2 Tech events paired with Non-Tech events: ₹200 bundle discount applied (2 Non-Tech events @ ₹50 each, any additional @ ₹150)!`
-                            : techCount >= 2 && nonTechCount < 2
-                            ? `1 Bundle applied (Saved ₹100). You have 2 Tech events selected—you can pick another Non-Tech event for just ₹50!`
-                            : `1 Bundle applied (Saved ₹100). 1 Non-Tech event is ₹50 (additional Non-Tech events are standard ₹150). Add 1 more Technical event to unlock your 2nd Non-Tech bundle for ₹50!`
-                          : techCount >= 2
-                          ? `Select Non-Technical events—your first 2 Non-Tech events will be just ₹50 each (saving up to ₹200)!`
-                          : `Select Non-Technical events—your 1st Non-Tech event is just ₹50 instead of ₹150 (saving ₹100)!`}
-                      </p>
-                    </div>
+              <div className="bg-[#C8922A]/10 border border-[#C8922A]/30 p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="text-[#C8922A] flex-shrink-0" size={20} />
+                  <div>
+                    <p className="text-xs font-bold text-[#C8922A] font-cad uppercase tracking-wider">
+                      {form.selectedEvents.length > 0
+                        ? `BUNDLE PASS ACTIVE: ₹350 (UP TO 2 TECH + 2 NON-TECH)`
+                        : `ADAGE'26 REGISTRATION PASS: ₹350 (UP TO 2 TECH + 2 NON-TECH)`}
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-cad">
+                      {form.selectedEvents.length === 0
+                        ? `Bundle includes up to 2 Technical + 2 Non-Technical events (4 events max) for a flat ₹350 per head! Extra events: Tech ₹200 | Non-Tech ₹150.`
+                        : `Bundle Status: ${techCount}/2 Tech & ${nonTechCount}/2 Non-Tech included in ₹350 pass.${(techCount > 2 || nonTechCount > 2) ? ` (+${Math.max(0, techCount - 2)} Extra Tech, +${Math.max(0, nonTechCount - 2)} Extra Non-Tech).` : (techCount < 2 || nonTechCount < 2) ? ` You can still add ${Math.max(0, 2 - techCount)} Tech and ${Math.max(0, 2 - nonTechCount)} Non-Tech at no extra fee!` : ' Full bundle capacity utilized (2 Tech + 2 Non-Tech).'}`}
+                    </p>
                   </div>
-                  <span className="px-2.5 py-1 bg-[#C8922A] text-black text-[9px] font-black uppercase font-cad tracking-widest flex-shrink-0">
-                    {discountPerHead > 0 ? `-₹${discountPerHead} APPLIED` : 'SPECIAL OFFER'}
-                  </span>
                 </div>
-              )}
+                <span className="px-2.5 py-1 bg-[#C8922A] text-black text-[9px] font-black uppercase font-cad tracking-widest flex-shrink-0">
+                  {discountPerHead > 0 ? `SAVED ₹${discountPerHead}` : '₹350 PASS'}
+                </span>
+              </div>
 
               {/* Event Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -490,31 +464,24 @@ export default function Register() {
                   const isTech = event.category === Pt.TECHNICAL;
                   const isNonTech = event.category === Pt.NON_TECHNICAL;
 
-                  const isLocked = isTech && !isSelected && techCount >= 2;
-
-                  let isBundleDiscounted = false;
-                  if (isNonTech && hasTechSelected) {
-                    if (isSelected) {
-                      const selectedNonTechIndex = nonTechSelectedList.findIndex(e => e.id === event.id);
-                      if (selectedNonTechIndex >= 0 && selectedNonTechIndex < techCount) {
-                        isBundleDiscounted = true;
-                      }
-                    } else {
-                      if (nonTechCount < techCount) {
-                        isBundleDiscounted = true;
-                      }
+                  let isCoveredInBundle = false;
+                  if (isSelected) {
+                    const techIndex = techSelectedList.findIndex(e => e.id === event.id);
+                    const nonTechIndex = nonTechSelectedList.findIndex(e => e.id === event.id);
+                    if (isTech && techIndex >= 0 && techIndex < 2) {
+                      isCoveredInBundle = true;
+                    } else if (isNonTech && nonTechIndex >= 0 && nonTechIndex < 2) {
+                      isCoveredInBundle = true;
                     }
                   }
+
+                  const canBeCoveredInBundle = isTech ? techCount < 2 : nonTechCount < 2;
 
                   return (
                     <div
                       key={event.id}
-                      onClick={() => !isLocked && toggleEventSelection(event.id)}
-                      className={`p-5 border transition-all duration-300 relative group ${
-                        isLocked
-                          ? "opacity-40 grayscale cursor-not-allowed bg-black/40 border-white/5"
-                          : "cursor-pointer"
-                      } ${
+                      onClick={() => toggleEventSelection(event.id)}
+                      className={`p-5 border transition-all duration-300 relative group cursor-pointer ${
                         isSelected
                           ? "bg-[#C8922A]/10 border-[#C8922A] shadow-[0_0_20px_rgba(200,146,42,0.15)]"
                           : "bg-[#090909] border-white/[0.08] hover:border-[#C8922A]/50 hover:bg-[#111111]"
@@ -528,11 +495,6 @@ export default function Register() {
                             }`}>
                               {event.category}
                             </span>
-                            {isLocked && (
-                              <span className="text-[8px] font-cad text-rose-400 font-bold tracking-widest uppercase">
-                                [MAX 2 TECH]
-                              </span>
-                            )}
                           </div>
                           <h4 className="font-cinzel font-bold text-sm sm:text-base text-[#EDEBE6] uppercase tracking-wide mt-2">
                             {event.title}
@@ -555,12 +517,22 @@ export default function Register() {
                           <Users size={12} /> Max: {event.maxMembers} Member{event.maxMembers > 1 ? 's' : ''}
                         </span>
                         <span className="font-bold text-[#C8922A] text-xs">
-                          {isBundleDiscounted ? (
-                            <span className="text-emerald-400 font-black flex items-center gap-1">
-                              <span className="line-through text-gray-500 text-[10px]">₹150</span> ₹50 (BUNDLE)
+                          {isSelected ? (
+                            isCoveredInBundle ? (
+                              <span className="text-emerald-400 font-black flex items-center gap-1">
+                                <span className="line-through text-gray-500 text-[10px]">₹{isTech ? techBaseFee : nonTechBaseFee}</span> IN BUNDLE
+                              </span>
+                            ) : (
+                              <span className="text-[#C8922A] font-black">
+                                +₹{isTech ? techBaseFee : nonTechBaseFee} (EXTRA)
+                              </span>
+                            )
+                          ) : canBeCoveredInBundle ? (
+                            <span>
+                              ₹{event.fee || (isTech ? techBaseFee : nonTechBaseFee)} <span className="text-[9px] text-emerald-400 font-normal">(In Bundle)</span>
                             </span>
                           ) : (
-                            `₹${event.fee || (isTech ? techBaseFee : nonTechBaseFee)}`
+                            `+₹${event.fee || (isTech ? techBaseFee : nonTechBaseFee)} (Extra)`
                           )}
                         </span>
                       </div>

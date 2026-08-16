@@ -23,7 +23,7 @@ export const Sr = [
     slogan: 'Precision in every dimension',
     category: 'Technical',
     maxMembers: 2,
-    fee: 250,
+    fee: 200,
     prize: 'Certificate + Cash Prize',
     timing: '10:30 AM',
     image: 'https://images.unsplash.com/photo-1503387762-592dedb8c260?auto=format&fit=crop&q=80&w=800'
@@ -36,7 +36,7 @@ export const Sr = [
     slogan: 'Strength in shapes, beauty in spans',
     category: 'Technical',
     maxMembers: 3,
-    fee: 250,
+    fee: 200,
     prize: 'Certificate + Cash Prize',
     timing: '11:00 AM',
     image: 'https://images.unsplash.com/photo-1447087640989-1065792fb138?auto=format&fit=crop&q=80&w=800'
@@ -49,7 +49,7 @@ export const Sr = [
     slogan: 'Mix, cure, compress',
     category: 'Technical',
     maxMembers: 2,
-    fee: 250,
+    fee: 200,
     prize: 'Certificate + Cash Prize',
     timing: '02:00 PM',
     image: 'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&q=80&w=800'
@@ -62,7 +62,7 @@ export const Sr = [
     slogan: 'Measure twice, dig once',
     category: 'Technical',
     maxMembers: 3,
-    fee: 250,
+    fee: 200,
     prize: 'Certificate + Cash Prize',
     timing: '10:00 AM',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=800'
@@ -75,7 +75,7 @@ export const Sr = [
     slogan: 'Drafting concepts. Engineering futures.',
     category: 'Technical',
     maxMembers: 4,
-    fee: 250,
+    fee: 200,
     prize: 'Certificate + Cash Prize',
     timing: '10:00 AM',
     image: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&q=80&w=800'
@@ -88,7 +88,7 @@ export const Sr = [
     slogan: 'Understanding the ground beneath',
     category: 'Technical',
     maxMembers: 2,
-    fee: 250,
+    fee: 200,
     prize: 'Certificate + Cash Prize',
     timing: '10:00 AM',
     image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800'
@@ -150,26 +150,56 @@ export const Sr = [
 /**
  * Calculates pricing details for ADAGE'26 event registration.
  * 
- * Tech event base fee = ₹250
- * Non-Tech event base fee = ₹150
- * 1-to-1 Bundle rule: Each 1 Tech event unlocks 1 Non-Tech event for ₹50 (giving a ₹100 discount per paired Non-Tech).
- * Max 2 bundles (1 Tech : 1 Non-Tech @ ₹50, 2 Tech : 2 Non-Tech @ ₹50 each).
+ * Pricing & Bundle Rules:
+ * - Bundle Pass: ₹350 per participant.
+ * - Bundle includes up to 4 events max: exactly up to 2 Technical + up to 2 Non-Technical events.
+ * - Events beyond the bundle limits:
+ *   - Additional Technical events (beyond 2) = ₹200 each
+ *   - Additional Non-Technical events (beyond 2) = ₹150 each
  */
 export function calculatePricing(techCount, nonTechCount, totalParticipants = 1) {
-  const techBaseFee = 250;
+  const techBaseFee = 200;
   const nonTechBaseFee = 150;
+  const bundleFee = 350;
+  const totalEvents = techCount + nonTechCount;
 
+  let baseRate = 0;
+  let techInBundle = 0;
+  let nonTechInBundle = 0;
+  let extraTechCount = 0;
+  let extraNonTechCount = 0;
+
+  if (totalEvents === 0) {
+    baseRate = 0;
+  } else {
+    // Bundle allows up to 2 Technical and up to 2 Non-Technical events
+    techInBundle = Math.min(techCount, 2);
+    nonTechInBundle = Math.min(nonTechCount, 2);
+
+    extraTechCount = Math.max(0, techCount - 2);
+    extraNonTechCount = Math.max(0, nonTechCount - 2);
+
+    baseRate = bundleFee + (extraTechCount * techBaseFee) + (extraNonTechCount * nonTechBaseFee);
+  }
+
+  const bundleEventsCount = techInBundle + nonTechInBundle;
   const normalTotal = (techCount * techBaseFee) + (nonTechCount * nonTechBaseFee);
-  const bundleCount = Math.min(techCount, nonTechCount);
-  const discount = bundleCount * 100;
-  const baseRate = normalTotal - discount;
+  const discount = Math.max(0, normalTotal - baseRate);
   const totalPayableFee = (totalParticipants || 1) * baseRate;
 
   return {
     techCount,
     nonTechCount,
+    totalEvents,
+    techBaseFee,
+    nonTechBaseFee,
+    bundleFee,
+    techInBundle,
+    nonTechInBundle,
+    bundleEventsCount,
+    extraTechCount,
+    extraNonTechCount,
     normalTotal,
-    bundleCount,
     discount,
     baseRate,
     totalParticipants: totalParticipants || 1,

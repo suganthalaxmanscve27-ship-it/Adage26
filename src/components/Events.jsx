@@ -277,7 +277,7 @@ export default function Events() {
         </div>
 
         {/* Filter tabs — horizontal scroll on mobile */}
-        <div className="flex gap-0 border-b border-white/[0.06] mb-8 sm:mb-12 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
+        <div className="flex gap-0 border-b border-white/[0.06] mb-6 sm:mb-8 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
           {categories.map(cat => (
             <button
               key={cat}
@@ -291,6 +291,27 @@ export default function Events() {
               {cat}
             </button>
           ))}
+        </div>
+
+        {/* Super Bundle Info Banner */}
+        <div className="mb-8 p-4 sm:p-5 bg-[#C8922A]/10 border border-[#C8922A]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Zap className="text-[#C8922A] flex-shrink-0" size={22} />
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-[#C8922A] font-cad uppercase tracking-wider">
+                ADAGE'26 MEGA REGISTRATION PASS: ₹350 (UP TO 2 TECH + 2 NON-TECH)
+              </p>
+              <p className="text-[10px] sm:text-xs text-gray-400 font-cad mt-0.5">
+                Register for up to 2 Technical + 2 Non-Technical events for a flat ₹350 per head! Additional events beyond bundle: Tech ₹200 | Non-Tech ₹150.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/register"
+            className="px-4 py-2 bg-[#C8922A] hover:bg-[#d6a13d] text-black font-cad text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 self-start sm:self-auto flex-shrink-0 transition-colors"
+          >
+            CLAIM PASS <ArrowRight size={14} />
+          </Link>
         </div>
 
         {/* Events grid */}
