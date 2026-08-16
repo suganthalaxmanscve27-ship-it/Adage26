@@ -531,7 +531,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { type = "REGISTRATION", registrationData, newStatus } = req.body || {};
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    const { type = "REGISTRATION", registrationData, newStatus } = body;
 
     if (!registrationData || !registrationData.email) {
       return res.status(400).json({ error: "Missing recipient email in registrationData." });
